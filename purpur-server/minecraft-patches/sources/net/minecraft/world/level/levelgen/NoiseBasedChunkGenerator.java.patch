@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
 +++ b/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
-@@ -361,21 +_,19 @@
+@@ -356,21 +_,19 @@
          int cellYMin = Mth.floorDiv(minY, noiseSettings.getCellHeight());
          int cellCountY = Mth.floorDiv(noiseSettings.height(), noiseSettings.getCellHeight());
          return cellCountY <= 0 ? CompletableFuture.completedFuture(centerChunk) : CompletableFuture.supplyAsync(() -> {
@@ -30,7 +30,7 @@
                  }
              }
          }, Runnable::run); // Paper - rewrite chunk system
-@@ -443,7 +_,15 @@
+@@ -438,7 +_,15 @@
  
                                  state = this.debugPreliminarySurfaceLevel(noiseChunk, posX, posY, posZ, state);
                                  if (state != AIR && !SharedConstants.debugVoidTerrain(centerChunk.getPos())) {

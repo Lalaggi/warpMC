@@ -4,7 +4,7 @@
  
      private @Nullable Vec3 getPositionTowardsVillagerWhoWantsGolem() {
          ServerLevel level = (ServerLevel)this.mob.level();
--        List<Villager> villagers = level.getEntities(EntityTypes.VILLAGER, this.mob.getBoundingBox().inflate(32.0), this::doesVillagerWantGolem);
+-        List<Villager> villagers = level.getEntities(EntityType.VILLAGER, this.mob.getBoundingBox().inflate(32.0), this::doesVillagerWantGolem);
 +        // WarpMC - lithium: use getEntitiesOfClass with spatial indexing
 +        List<Villager> villagers = level.getEntitiesOfClass(Villager.class, this.mob.getBoundingBox().inflate(32.0), this::doesVillagerWantGolem);
          if (villagers.isEmpty()) {
