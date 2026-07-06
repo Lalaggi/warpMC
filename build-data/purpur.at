@@ -8,10 +8,11 @@ public net.minecraft.world.level.block.ShulkerBoxBlock canOpen(Lnet/minecraft/wo
 public net.minecraft.world.level.block.entity.BeehiveBlockEntity$BeeData
 public net.minecraft.world.level.block.entity.BeehiveBlockEntity$BeeData occupant
 public net.minecraft.world.level.block.entity.FuelValues values
+public net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity openCount
+public net.minecraft.world.level.chunk.LevelChunkSection nonEmptyBlockCount
+public net.minecraft.world.level.chunk.LevelChunkSection tickingBlockCount
+public net.minecraft.world.level.chunk.LevelChunkSection tickingFluidCount
 public net.minecraft.world.level.portal.PortalShape FRAME
 public-f net.minecraft.world.entity.EntityType dimensions
 public-f net.minecraft.world.level.block.state.BlockBehaviour explosionResistance
-public net.minecraft.world.level.chunk.LevelChunkSection nonEmptyBlockCount
-public net.minecraft.world.level.chunk.LevelChunkSection tickingFluidCount
-public net.minecraft.world.level.chunk.LevelChunkSection tickingBlockCount
 public-f net.minecraft.world.level.chunk.LevelChunkSection states

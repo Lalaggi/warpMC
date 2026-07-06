@@ -1,32 +1,25 @@
 --- a/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
 +++ b/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
-@@ -356,27 +_,25 @@
-     public CompletableFuture<ChunkAccess> fillFromNoise(
-         final Blender blender, final RandomState randomState, final StructureManager structureManager, final ChunkAccess centerChunk
-     ) {
-         NoiseSettings noiseSettings = this.settings.value().noiseSettings().clampToHeightAccessor(centerChunk.getHeightAccessorForGeneration());
-         int minY = noiseSettings.minY();
+@@ -361,21 +_,19 @@
          int cellYMin = Mth.floorDiv(minY, noiseSettings.getCellHeight());
          int cellCountY = Mth.floorDiv(noiseSettings.height(), noiseSettings.getCellHeight());
          return cellCountY <= 0 ? CompletableFuture.completedFuture(centerChunk) : CompletableFuture.supplyAsync(() -> {
 -            int topSectionIndex = centerChunk.getSectionIndex(cellCountY * noiseSettings.getCellHeight() - 1 + minY);
 -            int bottomSectionIndex = centerChunk.getSectionIndex(minY);
 -            Set<LevelChunkSection> sections = Sets.newHashSet();
--
--            for (int sectionIndex = topSectionIndex; sectionIndex >= bottomSectionIndex; sectionIndex--) {
--                LevelChunkSection section = centerChunk.getSection(sectionIndex);
--                section.acquire();
--                sections.add(section);
--            }
--
 +            // WarpMC - noisium: Optimized chunk section locking using direct array access
 +            final int startIdx = centerChunk.getSectionIndex(cellCountY * noiseSettings.getCellHeight() - 1 + minY);
 +            final int endIdx = centerChunk.getSectionIndex(minY);
 +            final LevelChunkSection[] chunkSections = centerChunk.getSections();
-+
+ 
+-            for (int sectionIndex = topSectionIndex; sectionIndex >= bottomSectionIndex; sectionIndex--) {
+-                LevelChunkSection section = centerChunk.getSection(sectionIndex);
+-                section.acquire();
+-                sections.add(section);
 +            for (int i = startIdx; i >= endIdx; --i) {
 +                chunkSections[i].acquire();
-+            }
+             }
+-
              try {
                  return this.doFill(blender, structureManager, randomState, centerChunk, cellYMin, cellCountY);
              } finally {
@@ -37,8 +30,9 @@
                  }
              }
          }, Runnable::run); // Paper - rewrite chunk system
-     }
-@@ -445,9 +_,17 @@
+@@ -443,7 +_,15 @@
+ 
+                                 state = this.debugPreliminarySurfaceLevel(noiseChunk, posX, posY, posZ, state);
                                  if (state != AIR && !SharedConstants.debugVoidTerrain(centerChunk.getPos())) {
 -                                    section.setBlockState(xInSection, yInSection, zInSection, state, false);
 +                                    // WarpMC - noisium: Direct palette writes bypass lock overhead
@@ -53,7 +47,3 @@
                                      oceanFloor.update(xInSection, posY, zInSection, state);
                                      worldSurface.update(xInSection, posY, zInSection, state);
                                      if (aquifer.shouldScheduleFluidUpdate() && !state.getFluidState().isEmpty()) {
-                                         blockPos.set(posX, posY, posZ);
-                                         centerChunk.markPosForPostProcessing(blockPos);
-                                     }
-                                 }

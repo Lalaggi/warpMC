@@ -12,6 +12,16 @@ Purpur uses a patch-based system:
 
 Performance patches will go through the same patch system as new feature patches (or additional hunks in existing patches).
 
+## Patch Building Workflow
+
+1. Edit source directly in `purpur-server/src/minecraft/java/net/minecraft/` (changes go on top of existing applied patches)
+2. `./gradlew :purpur-server:fixupMinecraftSourcePatches` — commits source changes to the git patch tracking branch
+3. `./gradlew :purpur-server:rebuildMinecraftSourcePatches` — regenerates `.java.patch` files in `minecraft-patches/sources/` from the committed source changes
+4. Verify patches exist: `ls` / `cat` the patch file(s)
+5. `./gradlew :purpur-server:applyMinecraftPatches` — applies all patches from scratch to verify they compile correctly
+
+**Do NOT** hand-write patch files — always use source edits → fixup → rebuild. Paperweight's diff format uses `_` hunk context lines that standard `git apply` rejects, and the tooling ensures correct hunk header counts.
+
 ---
 
 ## Phase 1: Rebrand — Purpur → WarpMC

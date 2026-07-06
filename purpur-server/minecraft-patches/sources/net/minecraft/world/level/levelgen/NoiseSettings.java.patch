@@ -1,0 +1,31 @@
+--- a/net/minecraft/world/level/levelgen/NoiseSettings.java
++++ b/net/minecraft/world/level/levelgen/NoiseSettings.java
+@@ -9,6 +_,14 @@
+ import net.minecraft.world.level.dimension.DimensionType;
+ 
+ public record NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical) {
++    private final int cellWidth;
++    private final int cellHeight;
++
++    {
++        this.cellWidth = QuartPos.toBlock(this.noiseSizeHorizontal());
++        this.cellHeight = QuartPos.toBlock(this.noiseSizeVertical());
++    }
++
+     public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.<NoiseSettings>create(
+             i -> i.group(
+                     Codec.intRange(DimensionType.MIN_Y, DimensionType.MAX_Y).fieldOf("min_y").forGetter(NoiseSettings::minY),
+@@ -44,11 +_,11 @@
+     }
+ 
+     public int getCellHeight() {
+-        return QuartPos.toBlock(this.noiseSizeVertical());
++        return this.cellHeight; // WarpMC - noisium: cached cell dimension
+     }
+ 
+     public int getCellWidth() {
+-        return QuartPos.toBlock(this.noiseSizeHorizontal());
++        return this.cellWidth; // WarpMC - noisium: cached cell dimension
+     }
+ 
+     public NoiseSettings clampToHeightAccessor(final LevelHeightAccessor heightAccessor) {
