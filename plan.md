@@ -153,3 +153,35 @@ Deferred: hopper sleeping (~60 files, 4 utility subsystems), block entity sleepi
 - Purpur build config: `purpur-server/build.gradle.kts.patch`
 - Access transformers: `build-data/purpur.at`
 - Gradle properties: `gradle.properties` (paperCommit, mcVersion)
+
+---
+
+## Progress
+
+### Completed
+
+| Phase | Item | Status | Notes |
+|-------|------|--------|-------|
+| 1.x   | Rebrand all player-facing strings | ✅ Done | Cherry-picked onto `warp/26.1.2` |
+| 1.x   | Manifest / build identity | ✅ Done | `build.gradle.kts.patch`, `0001-Rebrand.patch` |
+| 1.3   | ServerBuildInfoImpl | ✅ Done | Brand names updated |
+| 2.1   | noisium core | ✅ Done | Direct palette writes, ATs |
+| 2.1   | noisium optional | ✅ Done | Loop order, cached fields, indexed fori |
+| 2.3   | Lithium entity (partial) | ✅ Done | GolemRandomStroll, LlamaFollowCaravan, AttributeMap |
+| —     | MC version 26.2 → 26.1.2 | ✅ Done | Switched from Chaos Cubed to Tiny Takeover |
+| —     | Patch workflow corrected | ✅ Done | Use `applyAllPatches` (root project), not `:purpur-server:applyMinecraftPatches` |
+
+### Current Branch
+
+`warp/26.1.2` — ahead of `origin/ver/26.1.2` by 3 commits:
+- `405ad831d` Updated Upstream (Paper)
+- `2bd8d41e5` WarpMC: Rebrand Purpur → WarpMC + Phase 2.1 noisium core
+- `2a507e975` WarpMC: Port rebrand + noisium + lithium patches to MC 26.1.2
+
+### Notes for Future Agents
+
+- **MC 26.1.2** uses `EntityType` (singular) — 26.2 used `EntityTypes` (plural). Check this when porting patches.
+- **`purpur-server/build.gradle.kts`** is NOT git-tracked (generated from patch but write-protected). Manual edit needed after version switch to fix mache version.
+- **Patch workflow**: edit source → `fixupMinecraftSourcePatches` → `rebuildMinecraftSourcePatches` → `applyAllPatches` (root project)
+- **`applyPaperMinecraftSourcePatches`** shows "Applied 0 patches" normally — expected for Purpur's fork config.
+- **Paperweight fork** means some task names differ from vanilla Paper.

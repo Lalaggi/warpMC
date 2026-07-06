@@ -1,0 +1,11 @@
+--- a/net/minecraft/nbt/CompoundTag.java
++++ b/net/minecraft/nbt/CompoundTag.java
+@@ -389,7 +_,7 @@
+     }
+ 
+     protected CompoundTag shallowCopy() {
+-        return new CompoundTag(new HashMap<>(this.tags));
++        return new CompoundTag(new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>(this.tags));
+     }
+ 
+     @Override

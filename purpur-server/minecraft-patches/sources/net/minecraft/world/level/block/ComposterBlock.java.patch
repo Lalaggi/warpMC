@@ -1,6 +1,15 @@
 --- a/net/minecraft/world/level/block/ComposterBlock.java
 +++ b/net/minecraft/world/level/block/ComposterBlock.java
-@@ -256,23 +_,52 @@
+@@ -49,6 +_,8 @@
+     public static final IntegerProperty LEVEL = BlockStateProperties.LEVEL_COMPOSTER;
+     public static final Object2FloatMap<ItemLike> COMPOSTABLES = new Object2FloatOpenHashMap<>();
+     private static final int HOLE_WIDTH = 12;
++    private static final int[] EMPTY_SLOTS = new int[0]; // WarpMC - lithium: cached array
++    private static final int[] ZERO_SLOTS = new int[]{0}; // WarpMC - lithium: cached array
+     private static final VoxelShape[] SHAPES = Util.make(
+         () -> {
+             VoxelShape[] shapes = Block.boxes(
+@@ -256,17 +_,27 @@
      ) {
          int fillLevel = state.getValue(LEVEL);
          if (fillLevel < 8 && COMPOSTABLES.containsKey(itemStack.getItem())) {
@@ -39,10 +48,10 @@
  
              return InteractionResult.SUCCESS;
          } else {
-             return super.useItemOn(itemStack, state, level, pos, player, hand, hitResult);
+@@ -274,6 +_,25 @@
          }
      }
-+
+ 
 +    // Purpur start - sneak to bulk process composter
 +    private static @Nullable BlockState process(int fillLevel, Player player, BlockState state, Level level, BlockPos pos, ItemStack itemStack) {
 +        if (fillLevel < 7 && !level.isClientSide()) {
@@ -61,6 +70,34 @@
 +        return state;
 +    }
 +    // Purpur end - Sneak to bulk process composter
- 
++
      @Override
      protected InteractionResult useWithoutItem(
+         final BlockState state, final Level level, final BlockPos pos, final Player player, final BlockHitResult hitResult
+@@ -434,7 +_,7 @@
+ 
+         @Override
+         public int[] getSlotsForFace(final Direction direction) {
+-            return new int[0];
++            return EMPTY_SLOTS; // WarpMC - lithium: cached array
+         }
+ 
+         @Override
+@@ -469,7 +_,7 @@
+ 
+         @Override
+         public int[] getSlotsForFace(final Direction direction) {
+-            return direction == Direction.UP ? new int[]{0} : new int[0];
++            return direction == Direction.UP ? ZERO_SLOTS : EMPTY_SLOTS; // WarpMC - lithium: cached arrays
+         }
+ 
+         @Override
+@@ -520,7 +_,7 @@
+ 
+         @Override
+         public int[] getSlotsForFace(final Direction direction) {
+-            return direction == Direction.DOWN ? new int[]{0} : new int[0];
++            return direction == Direction.DOWN ? ZERO_SLOTS : EMPTY_SLOTS; // WarpMC - lithium: cached arrays
+         }
+ 
+         @Override
