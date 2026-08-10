@@ -99,7 +99,7 @@
 -            "Brand-Id" to "papermc:paper",
 -            "Brand-Name" to "Paper",
 +            "Specification-Vendor" to "WarpMC Team — Yet another PaperMC Fork", // Purpur
-+            "Brand-Id" to "warpmc:warpMC", // Purpur
++            "Brand-Id" to "warpmc:warpmc", // Purpur
 +            "Brand-Name" to "WarpMC", // Purpur
              "Build-Number" to (build ?: ""),
              "Build-Time" to buildTime.toString(),
