@@ -1,15 +1,13 @@
 --- a/net/minecraft/world/level/levelgen/NoiseSettings.java
 +++ b/net/minecraft/world/level/levelgen/NoiseSettings.java
-@@ -9,6 +_,14 @@
+@@ -8,7 +_,11 @@
+ import net.minecraft.world.level.LevelHeightAccessor;
  import net.minecraft.world.level.dimension.DimensionType;
  
- public record NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical) {
-+    private final int cellWidth;
-+    private final int cellHeight;
-+
-+    {
-+        this.cellWidth = QuartPos.toBlock(this.noiseSizeHorizontal());
-+        this.cellHeight = QuartPos.toBlock(this.noiseSizeVertical());
+-public record NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical) {
++public record NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical, int cellWidth, int cellHeight) { // WarpMC - noisium: cached cell dimensions
++    public NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical) { // WarpMC - noisium: cached cell dimensions
++        this(minY, height, noiseSizeHorizontal, noiseSizeVertical, QuartPos.toBlock(noiseSizeHorizontal), QuartPos.toBlock(noiseSizeVertical));
 +    }
 +
      public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.<NoiseSettings>create(

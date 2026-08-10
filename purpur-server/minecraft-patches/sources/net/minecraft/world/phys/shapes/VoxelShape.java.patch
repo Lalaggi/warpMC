@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/phys/shapes/VoxelShape.java
++++ b/net/minecraft/world/phys/shapes/VoxelShape.java
+@@ -19,7 +_,7 @@
+ import org.jspecify.annotations.Nullable;
+ 
+ public abstract class VoxelShape implements ca.spottedleaf.moonrise.patches.collisions.shape.CollisionVoxelShape { // Paper - optimise collisions
+-    public DiscreteVoxelShape shape; // Paper - optimise collisions - public
++    public final DiscreteVoxelShape shape; // Paper - optimise collisions - public
+     private @Nullable VoxelShape @Nullable [] faces;
+ 
+     // Paper start - optimise collisions
