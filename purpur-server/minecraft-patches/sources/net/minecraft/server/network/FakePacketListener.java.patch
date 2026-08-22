@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/net/minecraft/server/network/FakePacketListener.java
-@@ -1,0 +_,42 @@
+@@ -1,0 +_,55 @@
 +package net.minecraft.server.network;
 +
 +import net.minecraft.network.Connection;
@@ -31,6 +31,19 @@
 +    @Override
 +    public void disconnect(@NonNull Component message) {
 +        // no-op: don't kick a fake player due to server-side events
++    }
++
++    @Override
++    public void disconnect(@NonNull Component message, org.bukkit.event.player.PlayerKickEvent.Cause cause) {
++        // no-op: also suppress cause-aware disconnect
++    }
++
++    @Override
++    public void tick() {
++        // Minimal tick: just update base fields, don't run vanilla idle/floating kicks.
++        // ServerPlayer.tick() already handles game logic; this only needs to avoid disconnect.
++        // Call the parent's ancillary tick without kick checks — for now no-op besides
++        // keeping the player's connection alive.
 +    }
 +
 +    @Override

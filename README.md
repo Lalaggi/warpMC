@@ -167,17 +167,53 @@ public void onDamage(EntityDamageEvent e) {
 
 ---
 
+## WarpAFK — Unplugged AFK for WarpMC
+
+Standalone port of [sakura-ryoko/unplugged-afk](https://github.com/sakura-ryoko/unplugged-afk) (Fabric, LGPL-3.0) as a Paper plugin in [`warp-afk/`](./warp-afk) (gitignored, standalone `main` repo).
+
+- `/unplug [minutes] [reason]` / `/afk` — spawn a same-UUID bot via `FakePlayerFactory`, kick yourself, bot stays ticked, auto-expires, hides from tab if configured
+- `/unplugged-admin spawn|kick|info|list|save|reload|purge|set` — parity with upstream admin commands
+- Persists to `plugins/WarpAFK/unplugged.json`, restores on restart (remaining-time adjusted for downtime)
+- Honors `unplugged.disable-damage`, `hide-player`, `reset-health-on-death` (FakePlayer respawns with full health/food instead of staying dead)
+
+Build after `publishToMavenLocal` from the server:
+
+```bash
+./gradlew publishToMavenLocal
+cd warp-afk && ./gradlew build  # -> build/libs/warp-afk-0.1.0-SNAPSHOT.jar
+```
+
+The plugin has its own git history (`git -C warp-afk log`) — push it to a separate GitLab project if you want CI for the plugin alone.
+
+## CI
+
+- **GitLab (primary, local runner):** [`.gitlab-ci.yml`](.gitlab-ci.yml) targets the `local-podman-warpMC` runner (`tags: warpmc`, `privileged`, podman `unix:///run/user/1000/podman/podman.sock`). It runs `applyAllPatches → build → createMojmapBundlerJar` on every push to `warp/*` and stores `purpur-*.jar` as pipeline artifacts (1 week). See [`../flatpak-repo/.gitlab-ci.yml`](../flatpak-repo/.gitlab-ci.yml) for the original podman-runner pattern.
+- **GitHub Actions (mirror):** [`.github/workflows/build.yml`](.github/workflows/build.yml) (Java 25, Gradle 9) runs on `warp/*` + `ver/*`, uploads jars as artifacts.
+
+Registered runner (already running via `systemctl --user status gitlab-runner`):
+
+```bash
+gitlab-runner verify  # local-podman-warpMC online, tags warpmc,warp,local-podman
+# re-register if needed:
+gitlab-runner register --url https://gitlab.com --registration-token GR1348941... \
+  --description "local-podman-warpMC" --tag-list "warpmc,warp,local-podman" --executor docker
+# then edit ~/.gitlab-runner/config.toml: host = "unix:///run/user/1000/podman/podman.sock", privileged = true
+systemctl --user restart gitlab-runner
+```
+
 ## Roadmap
 
 - [x] Rebrand Purpur → WarpMC (brand id, manifest, messages)
 - [x] noisium core + optional (loop order, cached fields)
 - [x] FerriteCore cache dedup + data-component fix
 - [x] Lithium collections/allocations (01) + partial entity
-- [x] FakePlayer system (API + NMS + CraftBukkit bridge)
+- [x] FakePlayer system (API + NMS + CraftBukkit bridge) — fixed: proper death revive, hidden handling, FakePacketListener overrides, timeout tick
+- [x] GitLab CI on local podman runner (`.gitlab-ci.yml` + `local-podman-warpMC`)
+- [x] WarpAFK plugin port of unplugged-afk (`warp-afk/` standalone repo)
 - [ ] Lithium 02/05/06/04/07/03 in order (world, entity, AI, explosion, raycast, shapes)
 - [ ] FerriteCore FastMap remaining (property storage)
 - [ ] WarpMC logo + docs polish
-- [ ] CI + GitLab Packages Maven repo
+- [ ] GitLab Packages Maven repo
 
 See `plan.md` for the full 3-phase plan and excluded patches table.
 

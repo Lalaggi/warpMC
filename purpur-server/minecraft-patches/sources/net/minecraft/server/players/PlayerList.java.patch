@@ -40,6 +40,32 @@
          playerConnection.suspendFlushing();
          GameRules gameRules = level.getGameRules();
          boolean immediateRespawn = gameRules.get(GameRules.IMMEDIATE_RESPAWN);
+@@ -239,6 +_,11 @@
+         player.containerMenu.transferTo(player.containerMenu, bukkitPlayer);
+ 
+         org.bukkit.event.player.PlayerJoinEvent playerJoinEvent = new org.bukkit.event.player.PlayerJoinEvent(bukkitPlayer, io.papermc.paper.adventure.PaperAdventure.asAdventure(component)); // Paper - Adventure
++        // WarpMC start - FakeServerPlayer: respect hidden flag for join message
++        if (isFake && ((net.minecraft.server.level.FakeServerPlayer) player).isHidden()) {
++            playerJoinEvent.setJoinMessage(null);
++        }
++        // WarpMC end
+         this.cserver.getPluginManager().callEvent(playerJoinEvent);
+ 
+         if (!player.connection.isAcceptingMessages()) {
+@@ -248,8 +_,11 @@
+         final net.kyori.adventure.text.Component jm = playerJoinEvent.joinMessage();
+ 
+         if (jm != null && !jm.equals(net.kyori.adventure.text.Component.empty())) { // Paper - Adventure
+-            joinMessage = io.papermc.paper.adventure.PaperAdventure.asVanilla(jm); // Paper - Adventure
+-            this.server.getPlayerList().broadcastSystemMessage(joinMessage, false); // Paper - Adventure
++            boolean isHiddenFake = isFake && ((net.minecraft.server.level.FakeServerPlayer) player).isHidden();
++            if (!isHiddenFake) {
++                joinMessage = io.papermc.paper.adventure.PaperAdventure.asVanilla(jm); // Paper - Adventure
++                this.server.getPlayerList().broadcastSystemMessage(joinMessage, false); // Paper - Adventure
++            }
+         }
+         // CraftBukkit end
+ 
 @@ -312,6 +_,7 @@
              scoreboard.addPlayerToTeam(player.getScoreboardName(), collideRuleTeam);
          }
@@ -56,6 +82,19 @@
          ServerLevel level = player.level();
          player.awardStat(Stats.LEAVE_GAME);
          // CraftBukkit start - Quitting must be before we do final save of data, in case plugins need to modify it
+@@ -440,7 +_,12 @@
+             player.closeContainer(org.bukkit.event.inventory.InventoryCloseEvent.Reason.DISCONNECT); // Paper - Inventory close reason
+         }
+ 
++        // WarpMC start - FakeServerPlayer: respect hidden flag for quit message
+         org.bukkit.event.player.PlayerQuitEvent playerQuitEvent = new org.bukkit.event.player.PlayerQuitEvent(player.getBukkitEntity(), leaveMessage, player.quitReason); // Paper - Adventure & Add API for quit reason
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer fakeQuit && fakeQuit.isHidden()) {
++            playerQuitEvent.setQuitMessage(null);
++        }
++        // WarpMC end
+         this.cserver.getPluginManager().callEvent(playerQuitEvent);
+         player.getBukkitEntity().disconnect();
+ 
 @@ -604,7 +_,25 @@
          this.playersByName.remove(serverPlayer.getScoreboardName().toLowerCase(java.util.Locale.ROOT)); // Paper
          serverPlayer.level().removePlayerImmediately(serverPlayer, removalReason);

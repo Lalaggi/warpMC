@@ -1,0 +1,113 @@
+# Build WarpMC on the local podman-backed GitLab runner.
+#
+# Runner: "local-podman-warpMC" (privileged, podman executor, tags: warpmc)
+# This job builds the full Purpur/WarpMC server jars and stores them as
+# pipeline artifacts. The runner is already running via:
+#   systemctl --user status gitlab-runner
+# with host = unix:///run/user/1000/podman/podman.sock
+#
+# Register a new runner if needed:
+#   gitlab-runner register --url https://gitlab.com \
+#     --registration-token <from GitLab > Settings > CI/CD > Runners> \
+#     --description "local-podman-warpMC" --tag-list "warpmc,warp,local-podman" \
+#     --executor docker --docker-image "eclipse-temurin:25-jdk"
+# then edit ~/.gitlab-runner/config.toml to set:
+#   host = "unix:///run/user/1000/podman/podman.sock"
+#   privileged = true
+# and: systemctl --user restart gitlab-runner
+#
+# Triggers on every push to warp/* or main, plus web/manual. Artifacts kept 1 week.
+#
+
+stages:
+  - build
+  - verify
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
+      when: always
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+    - changes:
+        - "purpur-api/**/*"
+        - "purpur-server/**/*"
+        - "paper-api/**/*"
+        - "paper-server/**/*"
+        - "patches/**/*"
+        - "build-data/**/*"
+        - "build.gradle.kts"
+        - "settings.gradle.kts"
+        - "gradle.properties"
+        - ".gitlab-ci.yml"
+      when: always
+    - when: never
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.configuration-cache=false"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle-home"
+  # Keep paperweight cache between runs
+  # (paperweight downloads ~1GB of mappings/libraries on first run)
+  GIT_STRATEGY: clone
+
+build:
+  stage: build
+  image: eclipse-temurin:25-jdk
+  tags:
+    - warpmc
+  cache:
+    key: "${CI_PROJECT_PATH}-gradle"
+    paths:
+      - .gradle-home/caches/
+      - .gradle-home/wrapper/
+      - .gradle-home/notifications/
+    policy: pull-push
+  before_script:
+    - java -version
+    - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates 2>&1 | tail -n 5
+    - git --version
+    - chmod +x ./gradlew
+    - mkdir -p "$GRADLE_USER_HOME"
+  script:
+    - ./gradlew applyAllPatches --stacktrace --info 2>&1 | tail -n 20
+    - ./gradlew build --stacktrace 2>&1 | tail -n 50
+    - ./gradlew createMojmapBundlerJar --stacktrace 2>&1 | tail -n 20
+    - ls -lh purpur-server/build/libs/*.jar || true
+    - ls -lh purpur-api/build/libs/*.jar || true
+    - sha256sum purpur-server/build/libs/*.jar | head -n 20
+  artifacts:
+    name: "warpmc-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - purpur-server/build/libs/purpur-*.jar
+      - purpur-api/build/libs/purpur-api-*.jar
+      - build/reports/
+    expire_in: 1 week
+  interruptible: true
+  timeout: 1h
+
+# Lightweight verification that patches still apply cleanly on a fresh clone
+# (useful to catch paperweight drift without rebuilding all jars)
+verify-patches:
+  stage: verify
+  image: eclipse-temurin:25-jdk
+  tags:
+    - warpmc
+  needs:
+    - job: build
+      optional: true
+  before_script:
+    - java -version
+    - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates > /dev/null
+    - chmod +x ./gradlew
+  script:
+    - ./gradlew applyAllPatches --stacktrace 2>&1 | tail -n 20
+    - echo "Patches applied successfully"
+  interruptible: true
+  timeout: 30m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: always
+    - when: manual
+      allow_failure: true

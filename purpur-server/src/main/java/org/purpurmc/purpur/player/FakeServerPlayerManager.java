@@ -109,23 +109,38 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
 
     /**
      * Called from the server tick to check timeout expiration on all fake players.
+     * Also removes dead fakes when resetHealthOnDeath is false (otherwise they self-revive).
      */
     public void tick() {
         if (!this.enabled) return;
 
         List<UUID> expired = new ArrayList<>();
+        List<UUID> deadNoRevive = new ArrayList<>();
         for (Map.Entry<UUID, FakeServerPlayer> entry : this.activeFakePlayers.entrySet()) {
             FakeServerPlayer player = entry.getValue();
             if (player.isExpired()) {
                 expired.add(entry.getKey());
+            } else if (!player.isResetHealthOnDeath() && !player.isAlive()) {
+                // Died and won't revive — clean up (death message already broadcast)
+                deadNoRevive.add(entry.getKey());
             }
         }
 
         for (UUID uuid : expired) {
             FakeServerPlayer player = this.activeFakePlayers.remove(uuid);
-            if (player != null && player.isAlive()) {
+            if (player != null) {
                 MinecraftServer server = MinecraftServer.getServer();
                 server.getPlayerList().remove(player);
+            }
+        }
+        for (UUID uuid : deadNoRevive) {
+            FakeServerPlayer player = this.activeFakePlayers.remove(uuid);
+            if (player != null) {
+                MinecraftServer server = MinecraftServer.getServer();
+                // Already dead; remove from player list to fire quit handling
+                try {
+                    server.getPlayerList().remove(player);
+                } catch (Exception ignored) {}
             }
         }
     }
@@ -199,6 +214,13 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
             MinecraftServer server = MinecraftServer.getServer();
             PlayerList playerList = server.getPlayerList();
 
+            // Evict existing fake with same UUID to prevent duplicate-UUID conflicts
+            FakeServerPlayer existing = FakeServerPlayerManager.this.activeFakePlayers.get(this.uuid);
+            if (existing != null) {
+                FakeServerPlayerManager.this.activeFakePlayers.remove(this.uuid);
+                try { server.getPlayerList().remove(existing); } catch (Exception ignored) {}
+            }
+
             // Determine world and level
             net.minecraft.server.level.ServerLevel level;
             if (this.world != null) {
@@ -230,21 +252,38 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
             FakeConnection connection = new FakeConnection();
             CommonListenerCookie cookie = CommonListenerCookie.createInitial(profile, false);
 
-            // Configure
+            // Configure before placeNewPlayer so hidden/damage flags are visible to join logic
             fakePlayer.setTimeoutMinutes(this.timeoutMinutes);
             fakePlayer.setReason(this.reason);
             fakePlayer.setDamageDisabled(this.damageDisabled);
             fakePlayer.setHidden(this.hidden);
             fakePlayer.setResetHealthOnDeath(this.resetHealthOnDeath);
 
-            // Place into the world — this fires PlayerJoinEvent and adds to player lists
-            playerList.placeNewPlayer(connection, fakePlayer, cookie);
+            // Register early so PlayerList patches can query isFake / hidden state
+            FakeServerPlayerManager.this.register(fakePlayer);
 
-            // Position
+            // Place into the world — this fires PlayerJoinEvent and adds to player lists
+            try {
+                playerList.placeNewPlayer(connection, fakePlayer, cookie);
+            } catch (RuntimeException e) {
+                FakeServerPlayerManager.this.unregister(fakePlayer.getUUID());
+                throw e;
+            }
+
+            // Position — for fake players this moves the chunk loader and resets position
             fakePlayer.connection.teleport(x, y, z, yaw, pitch);
 
-            // Register
-            FakeServerPlayerManager.this.register(fakePlayer);
+            // Apply tab-list visibility after join (hidden fakes start unlisted)
+            if (this.hidden) {
+                try {
+                    org.bukkit.entity.Player bukkitFake = (org.bukkit.entity.Player) fakePlayer.getBukkitEntity();
+                    for (org.bukkit.entity.Player viewer : org.bukkit.Bukkit.getOnlinePlayers()) {
+                        if (viewer != bukkitFake) {
+                            viewer.unlistPlayer(bukkitFake);
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
 
             // Return the Bukkit API handle
             return (FakePlayer) fakePlayer.getBukkitEntity();
