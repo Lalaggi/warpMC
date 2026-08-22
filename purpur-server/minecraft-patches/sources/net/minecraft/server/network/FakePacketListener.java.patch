@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/net/minecraft/server/network/FakePacketListener.java
-@@ -1,0 +_,78 @@
+@@ -1,0 +_,55 @@
 +package net.minecraft.server.network;
 +
 +import net.minecraft.network.Connection;
@@ -50,34 +50,9 @@
 +    public void teleport(final PositionMoveRotation destination, final Set<Relative> relatives) {
 +        super.teleport(destination, relatives);
 +
-+        // WarpMC start - FakeServerPlayer: ensure move even if getPlayerByUUID check fails (duplicate handling)
-+        this.resetPosition();
-+        try {
++        if (this.player.level().getPlayerByUUID(this.player.getUUID()) != null) {
++            this.resetPosition();
 +            this.player.level().getChunkSource().move(this.player);
-+        } catch (Exception ignored) {}
-+        // WarpMC end
-+    }
-+
-+    @Override
-+    public void internalTeleport(PositionMoveRotation destination, Set<Relative> relatives) {
-+        // WarpMC start - FakeServerPlayer: ensure chunk loader moves on internal teleport
-+        super.internalTeleport(destination, relatives);
-+        this.resetPosition();
-+        try {
-+            this.player.level().getChunkSource().move(this.player);
-+        } catch (Exception ignored) {}
-+        // WarpMC end
-+    }
-+
-+    @Override
-+    public boolean teleport(double x, double y, double z, float yRot, float xRot, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause cause) {
-+        // WarpMC start - FakeServerPlayer: ensure move on double teleport
-+        boolean result = super.teleport(x, y, z, yRot, xRot, cause);
-+        this.resetPosition();
-+        try {
-+            this.player.level().getChunkSource().move(this.player);
-+        } catch (Exception ignored) {}
-+        return result;
-+        // WarpMC end
++        }
 +    }
 +}

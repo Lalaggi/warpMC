@@ -11,26 +11,9 @@
  
      abstract public void loadAndSaveFiles(); // Paper - fix converting txt to json file; moved from DedicatedPlayerList constructor
  
-      public void placeNewPlayer(final Connection connection, final ServerPlayer player, final CommonListenerCookie cookie) {
+     public void placeNewPlayer(final Connection connection, final ServerPlayer player, final CommonListenerCookie cookie) {
 -        player.isRealPlayer = true; // Paper
 +        final boolean isFake = player instanceof net.minecraft.server.level.FakeServerPlayer; // WarpMC - FakeServerPlayer
-+        // WarpMC start - FakeServerPlayer: handle real->fake duplicate without Force-added warning
-+        // If a real player with same UUID is still online, evict them cleanly before adding fake.
-+        // This avoids ServerLevel.addPlayer Force-added duplicate path and duplicate playersByUUID entries.
-+        if (isFake) {
-+            ServerPlayer existing = this.getPlayer(player.getUUID());
-+            if (existing != null && existing != player && !(existing instanceof net.minecraft.server.level.FakeServerPlayer)) {
-+                try {
-+                    existing.level().removePlayerImmediately(existing, net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
-+                } catch (Exception ignored) {}
-+                try {
-+                    this.remove(existing, net.kyori.adventure.text.Component.empty());
-+                } catch (Exception ignored) {
-+                    try { this.players.remove(existing); } catch (Exception ignored2) {}
-+                }
-+            }
-+        }
-+        // WarpMC end
 +        player.isRealPlayer = !isFake; // Paper // WarpMC - fake players are not real
          player.loginTime = System.currentTimeMillis(); // Paper - Replace OfflinePlayer#getLastPlayed
          NameAndId gameProfile = player.nameAndId();

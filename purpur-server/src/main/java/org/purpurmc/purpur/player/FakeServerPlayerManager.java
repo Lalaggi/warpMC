@@ -221,28 +221,6 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
                 try { server.getPlayerList().remove(existing); } catch (Exception ignored) {}
             }
 
-            // Handle real -> fake transition without duplicate UUID warning (ServerLevel.addPlayer Force-added path).
-            // If a real player with same UUID is still online, remove them cleanly BEFORE adding the fake
-            // so playersByUUID and entity lookup do not collide.
-            ServerPlayer existingReal = playerList.getPlayer(this.uuid);
-            if (existingReal != null && !(existingReal instanceof FakeServerPlayer)) {
-                try {
-                    // Level remove first to avoid ServerLevel.addPlayer Force-added path
-                    existingReal.level().removePlayerImmediately(existingReal, net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
-                } catch (Exception ignored) {}
-                try {
-                    // Remove from PlayerList — use the API that fires PlayerQuitEvent but suppress broadcast
-                    // We pass empty leave message so no quit broadcast spam (real is being replaced by its own fake)
-                    // save() is handled inside remove()
-                    playerList.remove(existingReal, net.kyori.adventure.text.Component.empty());
-                } catch (Exception ignored) {
-                    // Fallback: at least ensure list/Map cleanup via direct remove
-                    try { playerList.players.remove(existingReal); } catch (Exception ignored2) {}
-                    try { playerList.save(existingReal); } catch (Exception ignored2) {}
-                }
-                try { server.invalidateStatus(); } catch (Exception ignored) {}
-            }
-
             // Determine world and level
             net.minecraft.server.level.ServerLevel level;
             if (this.world != null) {
@@ -281,11 +259,6 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
             fakePlayer.setHidden(this.hidden);
             fakePlayer.setResetHealthOnDeath(this.resetHealthOnDeath);
 
-            // Crucial: set position BEFORE placeNewPlayer so PlayerList logs correct coords and
-            // ServerLevel.addPlayer does not think fake is at 0,0,0. ServerPlayer constructor leaves pos at 0,0,0.
-            // Use absSnapTo here because ServerPlayer.snapTo calls connection.resetPosition() which NPEs before connection exists.
-            fakePlayer.absSnapTo(x, y, z, yaw, pitch);
-
             // Register early so PlayerList patches can query isFake / hidden state
             FakeServerPlayerManager.this.register(fakePlayer);
 
@@ -297,28 +270,8 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
                 throw e;
             }
 
-            // Ensure chunk loader and position are correctly applied for fake players.
-            // placeNewPlayer already did playerConnection.teleport(player.getX(),...) which for fakes goes through
-            // FakePacketListener.teleport(PositionMoveRotation) -> super + resetPosition + move.
-            // However that initial teleport used the position we just snapped to, so it's correct.
-            // But to be robust (in case of any level change in join event), re-apply correct position now
-            // using direct entity move rather than event-firing teleport.
-            try {
-                // Use direct snap + move for fake players (no PlayerTeleportEvent) to avoid cancellation and ensure chunk move
-                if (fakePlayer.level() == level) {
-                    fakePlayer.snapTo(x, y, z, yaw, pitch);
-                    // Force chunk loader update for Moonrise — RegionizedPlayerChunkLoader.addPlayer skips fakes before fix,
-                    // so we manually move / add ticket here as backup.
-                    fakePlayer.level().getChunkSource().move(fakePlayer);
-                    // Also add a ticket so farms tick even if loader still skips (3-arg version)
-                    fakePlayer.level().getChunkSource().addTicketWithRadius(
-                        net.minecraft.server.level.TicketType.PLAYER, new net.minecraft.world.level.ChunkPos((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4), 1
-                    );
-                } else {
-                    // Dimension changed in join event — use internal teleport
-                    fakePlayer.connection.internalTeleport(x, y, z, yaw, pitch);
-                }
-            } catch (Exception ignored) {}
+            // Position — for fake players this moves the chunk loader and resets position
+            fakePlayer.connection.teleport(x, y, z, yaw, pitch);
 
             // Apply tab-list visibility after join (hidden fakes start unlisted)
             if (this.hidden) {
