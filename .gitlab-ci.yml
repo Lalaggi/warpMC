@@ -86,11 +86,14 @@ build:
   script:
     - ./gradlew applyAllPatches --stacktrace
     - ./gradlew build --stacktrace
-    # Bundler/paperclip are optional runnable shims — build them if available, don't fail the pipeline if task name drifts
-    - ./gradlew :purpur-server:createMojmapBundlerJar --stacktrace || ./gradlew :purpur-server:createReobfPaperclipJar --stacktrace || echo "Bundler task not found, using build artifacts only"
-    - ls -lh purpur-server/build/libs/*.jar || true
-    - ls -lh purpur-api/build/libs/*.jar || true
+    # Runnable jars for `java -jar` — these are the primary release artifacts (95 MB bundler, 58 MB paperclip)
+    # Correct task names per `gradlew tasks --all` are :purpur-server:createBundlerJar / :purpur-server:createPaperclipJar
+    # (legacy names createMojmapBundlerJar / createReobfPaperclipJar no longer exist — that was the CI failure)
+    - ./gradlew :purpur-server:createBundlerJar :purpur-server:createPaperclipJar --stacktrace
+    - ls -lh purpur-server/build/libs/*.jar
+    - ls -lh purpur-api/build/libs/*.jar
     - sha256sum purpur-server/build/libs/*.jar | head -n 20
+    - test -f purpur-server/build/libs/purpur-bundler-*.jar || (echo "ERROR: purpur-bundler jar missing — release needs java -jar artifact" && exit 1)
   artifacts:
     name: "warpmc-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
     paths:
