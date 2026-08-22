@@ -4,30 +4,16 @@
 #   host = unix:///run/user/1000/podman/podman.sock
 #   executor docker, image eclipse-temurin:25-jdk, privileged=true
 # Project settings enforced (2026-08-22):
-#   shared_runners_enabled = false  (glab api PUT projects/85653592 -f shared_runners_enabled=false)
-#   group_runners_enabled  = false  (same)
-# Result: GitLab SaaS shared runners (instance_type) will NEVER pick this job.
-#         Only the local podman runner with tag `warpmc` can run it.
+#   shared_runners_enabled = false
+#   group_runners_enabled  = false
+# Result: GitLab SaaS shared runners will NEVER pick these jobs.
+#         Only the local podman runner with tag `warpmc` can run them.
 #         Cost = 0 (your own machine, podman). GitHub Actions is manual-only.
-# Verify anytime:
-#   glab api projects/Lalaggi%2FwarpMC | grep -E "shared_runners|group_runners"
-#   gitlab-runner verify
-#   systemctl --user status gitlab-runner
-#   # check podman socket: ls -l /run/user/1000/podman/podman.sock
 #
-# Register a new runner if needed:
-#   glab api projects/Lalaggi%2FwarpMC | grep runners_token
-#   gitlab-runner register --url https://gitlab.com \
-#     --registration-token GR1348941B5tmoUY5pT8quvERUsAF \
-#     --description "local-podman-warpMC" --tag-list "warpmc,warp,local-podman" \
-#     --executor docker --docker-image "eclipse-temurin:25-jdk"
-# then edit ~/.gitlab-runner/config.toml to set:
-#   host = "unix:///run/user/1000/podman/podman.sock"
-#   privileged = true
-# and: systemctl --user restart gitlab-runner
+# Release assets: jars uploaded to GitLab Generic Package Registry via CI_JOB_TOKEN,
+# then linked individually in the release (no zip download).
 #
 # Triggers on every push to warp/* or main, plus web/manual. Artifacts kept 1 week.
-#
 
 stages:
   - build
@@ -59,9 +45,8 @@ workflow:
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.configuration-cache=false"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle-home"
-  # Keep paperweight cache between runs
-  # (paperweight downloads ~1GB of mappings/libraries on first run)
   GIT_STRATEGY: clone
+  RELEASE_VERSION: "alpha-$CI_COMMIT_SHORT_SHA"
 
 build:
   stage: build
@@ -78,7 +63,6 @@ build:
   before_script:
     - java -version
     - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates 2>&1 | tail -n 5
-    - git --version
     - git config --global user.email "ci@warpmc.local"
     - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
@@ -86,14 +70,12 @@ build:
   script:
     - ./gradlew applyAllPatches --stacktrace
     - ./gradlew build --stacktrace
-    # Runnable jars for `java -jar` — these are the primary release artifacts (95 MB bundler, 58 MB paperclip)
-    # Correct task names per `gradlew tasks --all` are :purpur-server:createBundlerJar / :purpur-server:createPaperclipJar
-    # (legacy names createMojmapBundlerJar / createReobfPaperclipJar no longer exist — that was the CI failure)
     - ./gradlew :purpur-server:createBundlerJar :purpur-server:createPaperclipJar --stacktrace
-    - ls -lh purpur-server/build/libs/*.jar
-    - ls -lh purpur-api/build/libs/*.jar
-    - sha256sum purpur-server/build/libs/*.jar | head -n 20
-    - ls purpur-server/build/libs/purpur-bundler-*.jar
+    - ls -lh purpur-server/build/libs/purpur-*.jar
+    - ls -lh purpur-api/build/libs/purpur-*.jar
+    - sha256sum purpur-server/build/libs/purpur-*.jar
+    # Upload jars to GitLab Generic Package Registry (CI_JOB_TOKEN has write_package)
+    - ./ci/upload-packages.sh
   artifacts:
     name: "warpmc-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
     paths:
@@ -104,8 +86,6 @@ build:
   interruptible: true
   timeout: 1h
 
-# Lightweight verification that patches still apply cleanly on a fresh clone
-# (useful to catch paperweight drift without rebuilding all jars)
 verify-patches:
   stage: verify
   image: eclipse-temurin:25-jdk
@@ -138,11 +118,11 @@ release:
     - warpmc
   needs:
     - job: build
-      artifacts: true
+      artifacts: false
   before_script:
-    - echo "Preparing alpha release for $CI_COMMIT_SHA on $CI_COMMIT_REF_NAME"
+    - echo "Creating release $RELEASE_VERSION"
   script:
-    - echo "Creating alpha release alpha-$CI_COMMIT_SHORT_SHA"
+    - echo "Release $RELEASE_VERSION ready"
   release:
     tag_name: "alpha-$CI_COMMIT_SHORT_SHA"
     name: "Alpha $CI_COMMIT_SHORT_SHA ($CI_COMMIT_REF_NAME)"
@@ -151,18 +131,26 @@ release:
       Branch: $CI_COMMIT_REF_NAME
       Pipeline: $CI_PIPELINE_ID ($CI_PIPELINE_URL)
 
-      **Jars attached as job artifacts** — download from the build job artifacts:
-      - purpur-bundler  : runnable server jar (~95 MB)
-      - purpur-paperclip: alternative runnable
-      - purpur-api / purpur-server: raw libs
+      **Download individual jars below** — pick the one you need:
+      - purpur-bundler.jar: runnable server (~95 MB) — `java -jar purpur-bundler.jar`
+      - purpur-paperclip.jar: alternative runnable (~54 MB)
 
-      Built 100% locally on $CI_RUNNER_DESCRIPTION (podman, no cloud minutes).
+      Built 100% locally (podman, zero cloud minutes).
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "Build artifacts (download zip)"
-          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/download?job=build"
-          link_type: "other"
+        - name: "purpur-bundler.jar"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-bundler.jar"
+          link_type: "package"
+        - name: "purpur-paperclip.jar"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-paperclip.jar"
+          link_type: "package"
+        - name: "purpur-api.jar"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-api.jar"
+          link_type: "package"
+        - name: "purpur-server.jar"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-server.jar"
+          link_type: "package"
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
       when: on_success
