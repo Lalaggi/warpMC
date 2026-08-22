@@ -32,6 +32,7 @@
 stages:
   - build
   - verify
+  - release
 
 workflow:
   rules:
@@ -83,9 +84,8 @@ build:
     - chmod +x ./gradlew
     - mkdir -p "$GRADLE_USER_HOME"
   script:
-    - ./gradlew applyAllPatches --stacktrace 2>&1 | tail -n 100
-    - ./gradlew build --stacktrace 2>&1 | tail -n 100
-    - ./gradlew createMojmapBundlerJar --stacktrace 2>&1 | tail -n 20
+    - ./gradlew applyAllPatches --stacktrace
+    - ./gradlew build createMojmapBundlerJar --stacktrace
     - ls -lh purpur-server/build/libs/*.jar || true
     - ls -lh purpur-api/build/libs/*.jar || true
     - sha256sum purpur-server/build/libs/*.jar | head -n 20
@@ -116,7 +116,7 @@ verify-patches:
     - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
   script:
-    - ./gradlew applyAllPatches --stacktrace 2>&1 | tail -n 100
+    - ./gradlew applyAllPatches --stacktrace
     - echo "Patches applied successfully"
   interruptible: true
   timeout: 30m
@@ -125,3 +125,44 @@ verify-patches:
       when: always
     - when: manual
       allow_failure: true
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  tags:
+    - warpmc
+  needs:
+    - job: build
+      artifacts: true
+  before_script:
+    - echo "Preparing alpha release for $CI_COMMIT_SHA on $CI_COMMIT_REF_NAME"
+  script:
+    - echo "Creating alpha release alpha-$CI_COMMIT_SHORT_SHA"
+  release:
+    tag_name: "alpha-$CI_COMMIT_SHORT_SHA"
+    name: "Alpha $CI_COMMIT_SHORT_SHA ($CI_COMMIT_REF_NAME)"
+    description: |
+      Automated alpha build from commit $CI_COMMIT_SHA
+      Branch: $CI_COMMIT_REF_NAME
+      Pipeline: $CI_PIPELINE_ID ($CI_PIPELINE_URL)
+
+      **Jars attached as job artifacts** — download from the build job artifacts:
+      - purpur-bundler  : runnable server jar (~95 MB)
+      - purpur-paperclip: alternative runnable
+      - purpur-api / purpur-server: raw libs
+
+      Built 100% locally on $CI_RUNNER_DESCRIPTION (podman, no cloud minutes).
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "Build artifacts (download zip)"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/download?job=build"
+          link_type: "other"
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+    - when: never
+  interruptible: false
+  timeout: 10m
