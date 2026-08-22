@@ -1,14 +1,24 @@
-# Build WarpMC on the local podman-backed GitLab runner.
+# Build WarpMC 100% LOCALLY — ZERO GitLab/GitHub cloud minutes
 #
 # Runner: "local-podman-warpMC" (privileged, podman executor, tags: warpmc)
-# This job builds the full Purpur/WarpMC server jars and stores them as
-# pipeline artifacts. The runner is already running via:
+#   host = unix:///run/user/1000/podman/podman.sock
+#   executor docker, image eclipse-temurin:25-jdk, privileged=true
+# Project settings enforced (2026-08-22):
+#   shared_runners_enabled = false  (glab api PUT projects/85653592 -f shared_runners_enabled=false)
+#   group_runners_enabled  = false  (same)
+# Result: GitLab SaaS shared runners (instance_type) will NEVER pick this job.
+#         Only the local podman runner with tag `warpmc` can run it.
+#         Cost = 0 (your own machine, podman). GitHub Actions is manual-only.
+# Verify anytime:
+#   glab api projects/Lalaggi%2FwarpMC | grep -E "shared_runners|group_runners"
+#   gitlab-runner verify
 #   systemctl --user status gitlab-runner
-# with host = unix:///run/user/1000/podman/podman.sock
+#   # check podman socket: ls -l /run/user/1000/podman/podman.sock
 #
 # Register a new runner if needed:
+#   glab api projects/Lalaggi%2FwarpMC | grep runners_token
 #   gitlab-runner register --url https://gitlab.com \
-#     --registration-token <from GitLab > Settings > CI/CD > Runners> \
+#     --registration-token GR1348941B5tmoUY5pT8quvERUsAF \
 #     --description "local-podman-warpMC" --tag-list "warpmc,warp,local-podman" \
 #     --executor docker --docker-image "eclipse-temurin:25-jdk"
 # then edit ~/.gitlab-runner/config.toml to set:
