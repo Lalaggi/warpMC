@@ -22,6 +22,9 @@ stages:
 
 workflow:
   rules:
+    # Never run a pipeline for tags created by the release job (prevents duplicate build on alpha-* tags)
+    - if: $CI_COMMIT_TAG
+      when: never
     - if: $CI_PIPELINE_SOURCE == "web"
       when: always
     - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
@@ -159,23 +162,23 @@ release:
         - name: "warpmc.jar — runnable server (java -jar warpmc.jar) — RECOMMENDED"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/warpmc.jar"
           link_type: "package"
-          filepath: "/warpmc.jar"
+          direct_asset_path: "/warpmc.jar"
         - name: "purpur-bundler.jar — runnable server (same as warpmc.jar)"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-bundler.jar"
           link_type: "package"
-          filepath: "/purpur-bundler.jar"
+          direct_asset_path: "/purpur-bundler.jar"
         - name: "purpur-paperclip.jar — alternative runnable"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-paperclip.jar"
           link_type: "package"
-          filepath: "/purpur-paperclip.jar"
+          direct_asset_path: "/purpur-paperclip.jar"
         - name: "purpur-api.jar"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-api.jar"
           link_type: "package"
-          filepath: "/purpur-api.jar"
+          direct_asset_path: "/purpur-api.jar"
         - name: "purpur-server.jar — raw (not runnable)"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-server.jar"
           link_type: "package"
-          filepath: "/purpur-server.jar"
+          direct_asset_path: "/purpur-server.jar"
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
       when: on_success
