@@ -78,11 +78,13 @@ build:
     - java -version
     - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates 2>&1 | tail -n 5
     - git --version
+    - git config --global user.email "ci@warpmc.local"
+    - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
     - mkdir -p "$GRADLE_USER_HOME"
   script:
-    - ./gradlew applyAllPatches --stacktrace --info 2>&1 | tail -n 20
-    - ./gradlew build --stacktrace 2>&1 | tail -n 50
+    - ./gradlew applyAllPatches --stacktrace 2>&1 | tail -n 100
+    - ./gradlew build --stacktrace 2>&1 | tail -n 100
     - ./gradlew createMojmapBundlerJar --stacktrace 2>&1 | tail -n 20
     - ls -lh purpur-server/build/libs/*.jar || true
     - ls -lh purpur-api/build/libs/*.jar || true
@@ -110,9 +112,11 @@ verify-patches:
   before_script:
     - java -version
     - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates > /dev/null
+    - git config --global user.email "ci@warpmc.local"
+    - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
   script:
-    - ./gradlew applyAllPatches --stacktrace 2>&1 | tail -n 20
+    - ./gradlew applyAllPatches --stacktrace 2>&1 | tail -n 100
     - echo "Patches applied successfully"
   interruptible: true
   timeout: 30m
