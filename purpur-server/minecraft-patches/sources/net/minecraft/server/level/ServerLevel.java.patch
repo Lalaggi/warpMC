@@ -179,3 +179,22 @@
                      merchant.getTrader().closeInventory(org.bukkit.event.inventory.InventoryCloseEvent.Reason.UNLOADED);
                  }
                  // Paper end - Fix merchant inventory not closing on entity removal
+
+@@ -1682,7 +_,16 @@
+     private void addPlayer(final ServerPlayer player) {
+         Entity existing = this.getEntity(player.getUUID());
+         if (existing != null) {
+-            LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
++            // WarpMC start - FakeServerPlayer: fake replacing real is expected during /unplug, don't warn
++            boolean isFakeReplacingReal = player instanceof net.minecraft.server.level.FakeServerPlayer
++                && existing instanceof ServerPlayer && !(existing instanceof net.minecraft.server.level.FakeServerPlayer)
++                && player.getUUID().equals(existing.getUUID());
++            if (!isFakeReplacingReal) {
++                LOGGER.warn("Force-added player with duplicate UUID {}", player.getUUID());
++            }
++            // WarpMC end
+             existing.unRide();
+             this.removePlayerImmediately((ServerPlayer)existing, Entity.RemovalReason.DISCARDED);
+         }
+
+         this.moonrise$getEntityLookup().addNewEntity(player); // Paper - rewrite chunk system
