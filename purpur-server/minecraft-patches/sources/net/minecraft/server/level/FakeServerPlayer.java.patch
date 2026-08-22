@@ -39,7 +39,7 @@
 +                            ClientInformation clientInformation, UUID ownerUuid) {
 +        super(server, level, profile, clientInformation);
 +        this.ownerUuid = ownerUuid;
-+        this.isRealPlayer = false;
++        this.isRealPlayer = true; // must be true for Moonrise chunk tickets (AFK farms); isFake via instanceof
 +        this.spawnTime = Instant.now();
 +    }
 +
@@ -184,5 +184,17 @@
 +        if (!this.isUsingItem()) {
 +            super.onEquipItem(slot, previous, stack);
 +        }
++    }
++
++    // WarpMC: AFK bots must load chunks (farms). Moonrise skips !isRealPlayer for tickets — fake isFake but should still load.
++    @Override
++    public boolean moonrise$isRealPlayer() {
++        return true;
++    }
++
++    @Override
++    public void moonrise$setRealPlayer(boolean real) {
++        // keep true for chunk loading; isFake tracked via instanceof
++        this.isRealPlayer = true;
 +    }
 +}
