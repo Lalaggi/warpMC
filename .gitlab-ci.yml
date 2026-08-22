@@ -93,7 +93,7 @@ build:
     - ls -lh purpur-server/build/libs/*.jar
     - ls -lh purpur-api/build/libs/*.jar
     - sha256sum purpur-server/build/libs/*.jar | head -n 20
-    - test -f purpur-server/build/libs/purpur-bundler-*.jar || (echo "ERROR: purpur-bundler jar missing — release needs java -jar artifact" && exit 1)
+    - ls purpur-server/build/libs/purpur-bundler-*.jar
   artifacts:
     name: "warpmc-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
     paths:
