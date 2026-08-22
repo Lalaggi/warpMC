@@ -62,7 +62,7 @@ build:
     policy: pull-push
   before_script:
     - java -version
-    - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates 2>&1 | tail -n 5
+    - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates curl 2>&1 | tail -n 5
     - git config --global user.email "ci@warpmc.local"
     - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
@@ -74,13 +74,20 @@ build:
     - ls -lh purpur-server/build/libs/purpur-*.jar
     - ls -lh purpur-api/build/libs/purpur-*.jar
     - sha256sum purpur-server/build/libs/purpur-*.jar
+    # Create user-friendly jar name: `java -jar warpmc.jar` (copy of bundler, the primary runnable)
+    - cp purpur-server/build/libs/purpur-bundler-*.jar warpmc.jar
+    - cp purpur-server/build/libs/purpur-bundler-*.jar purpur-server/build/libs/warpmc-bundler.jar || true
+    - ls -lh warpmc.jar purpur-server/build/libs/warpmc-bundler.jar
+    - sha256sum warpmc.jar
     # Upload jars to GitLab Generic Package Registry (CI_JOB_TOKEN has write_package)
     - ./ci/upload-packages.sh
   artifacts:
     name: "warpmc-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
     paths:
       - purpur-server/build/libs/purpur-*.jar
+      - purpur-server/build/libs/warpmc-bundler.jar
       - purpur-api/build/libs/purpur-api-*.jar
+      - warpmc.jar
       - build/reports/
     expire_in: 1 week
   interruptible: true
@@ -131,26 +138,44 @@ release:
       Branch: $CI_COMMIT_REF_NAME
       Pipeline: $CI_PIPELINE_ID ($CI_PIPELINE_URL)
 
-      **Download individual jars below** — pick the one you need:
-      - purpur-bundler.jar: runnable server (~95 MB) — `java -jar purpur-bundler.jar`
-      - purpur-paperclip.jar: alternative runnable (~54 MB)
+      ### 🚀 Run the server
+      ```bash
+      java -jar warpmc.jar
+      # or
+      java -jar purpur-bundler.jar
+      ```
+
+      **Primary runnable (use this one):**
+      - **warpmc.jar** / **purpur-bundler.jar** — Mojang bundler, runnable server (~95 MB) — `java -jar warpmc.jar`
+
+      **Alternatives:**
+      - purpur-paperclip.jar — Paperclip runnable alternative (~54 MB)
+      - purpur-server.jar / purpur-api.jar — raw libs (not runnable alone)
 
       Built 100% locally (podman, zero cloud minutes).
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "purpur-bundler.jar"
+        - name: "warpmc.jar — runnable server (java -jar warpmc.jar) — RECOMMENDED"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/warpmc.jar"
+          link_type: "package"
+          filepath: "/warpmc.jar"
+        - name: "purpur-bundler.jar — runnable server (same as warpmc.jar)"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-bundler.jar"
           link_type: "package"
-        - name: "purpur-paperclip.jar"
+          filepath: "/purpur-bundler.jar"
+        - name: "purpur-paperclip.jar — alternative runnable"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-paperclip.jar"
           link_type: "package"
+          filepath: "/purpur-paperclip.jar"
         - name: "purpur-api.jar"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-api.jar"
           link_type: "package"
-        - name: "purpur-server.jar"
+          filepath: "/purpur-api.jar"
+        - name: "purpur-server.jar — raw (not runnable)"
           url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-server.jar"
           link_type: "package"
+          filepath: "/purpur-server.jar"
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
       when: on_success
