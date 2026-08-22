@@ -5,10 +5,10 @@ Subject: [PATCH] Barrels and enderchests 6 rows
 
 
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index 5da9ae5617568aaadfe2bf90e3a358d271e0c2c2..e33f57caf9640e891b87a0e9bdcd5a44911bec73 100644
+index f8d1f4f9996a29fdaaa3b738bbeb0410fa1f9639..cf0818985d834b372c2698bd41addd49b156c23f 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -885,6 +885,27 @@ public abstract class PlayerList {
+@@ -914,6 +914,27 @@ public abstract class PlayerList {
          player.getBukkitEntity().recalculatePermissions(); // CraftBukkit
          this.server.getCommands().sendCommands(player);
          } // Paper - Add sendOpLevel API
@@ -37,7 +37,7 @@ index 5da9ae5617568aaadfe2bf90e3a358d271e0c2c2..e33f57caf9640e891b87a0e9bdcd5a44
  
      // Paper start - whitelist verify event / login event
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 3b0a0525cdca3ea5b91834e04b42696a7cedde10..4d80fd91a1f610e5af0ad258f94dc16f2f77ef0d 100644
+index 543923879106b3b471abeaf931050d3b16284b6d..cf906ca25097f8ba808d90cc2e80fbe3c3121d14 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -175,6 +175,7 @@ public abstract class Player extends Avatar implements ContainerUser {

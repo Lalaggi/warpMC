@@ -1,0 +1,162 @@
+--- /dev/null
++++ b/net/minecraft/server/level/FakeServerPlayer.java
+@@ -1,0 +_,159 @@
++package net.minecraft.server.level;
++
++import com.mojang.authlib.GameProfile;
++import java.time.Instant;
++import java.util.UUID;
++import net.minecraft.network.chat.RemoteChatSession;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.level.ClientInformation;
++import net.minecraft.world.damagesource.DamageSource;
++import net.minecraft.world.entity.EquipmentSlot;
++import net.minecraft.world.item.ItemStack;
++import org.jspecify.annotations.Nullable;
++
++/**
++ * A server-side-only {@link ServerPlayer} that has no real network connection.
++ * <p>
++ * This player is a full {@link ServerPlayer}: it ticks, gets chunk-loaded,
++ * responds to game mechanics, and appears in the player list — but all
++ * network packets are silently discarded.
++ * <p>
++ * Use {@link org.purpurmc.purpur.player.FakePlayerFactory} from the API
++ * layer to create instances of this class.
++ */
++public class FakeServerPlayer extends ServerPlayer {
++
++    private boolean damageDisabled = false;
++    private boolean hidden = false;
++    private boolean resetHealthOnDeath = true;
++    private long timeoutMinutes = -1;
++    private @Nullable Instant spawnTime;
++    private @Nullable String reason;
++    private final UUID ownerUuid;
++
++    public FakeServerPlayer(MinecraftServer server, ServerLevel level, GameProfile profile,
++                            ClientInformation clientInformation, UUID ownerUuid) {
++        super(server, level, profile, clientInformation);
++        this.ownerUuid = ownerUuid;
++        this.isRealPlayer = false;
++        this.spawnTime = Instant.now();
++    }
++
++    // --- FakePlayer API ---
++
++    public boolean isFakePlayer() {
++        return true;
++    }
++
++    public UUID getOwnerUuid() {
++        return this.ownerUuid;
++    }
++
++    public long getTimeoutMinutes() {
++        return this.timeoutMinutes;
++    }
++
++    public void setTimeoutMinutes(long minutes) {
++        this.timeoutMinutes = minutes;
++    }
++
++    public @Nullable String getReason() {
++        return this.reason;
++    }
++
++    public void setReason(@Nullable String reason) {
++        this.reason = reason;
++    }
++
++    public @Nullable Instant getSpawnTime() {
++        return this.spawnTime;
++    }
++
++    public boolean isExpired() {
++        if (this.timeoutMinutes < 0 || this.spawnTime == null) {
++            return false;
++        }
++        long elapsedMs = System.currentTimeMillis() - this.spawnTime.toEpochMilli();
++        long timeoutMs = this.timeoutMinutes * 60L * 1000L;
++        return elapsedMs >= timeoutMs;
++    }
++
++    public boolean isDamageDisabled() {
++        return this.damageDisabled;
++    }
++
++    public void setDamageDisabled(boolean disabled) {
++        this.damageDisabled = disabled;
++    }
++
++    public boolean isHidden() {
++        return this.hidden;
++    }
++
++    public void setHidden(boolean hidden) {
++        this.hidden = hidden;
++    }
++
++    public boolean isResetHealthOnDeath() {
++        return this.resetHealthOnDeath;
++    }
++
++    public void setResetHealthOnDeath(boolean reset) {
++        this.resetHealthOnDeath = reset;
++    }
++
++    public void remove() {
++        MinecraftServer server = this.level().getServer();
++        server.getPlayerList().remove(this);
++    }
++
++    // --- Overrides ---
++
++    @Override
++    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
++        if (this.damageDisabled) {
++            return false;
++        }
++        return super.hurtServer(level, damageSource, amount);
++    }
++
++    @Override
++    public void die(DamageSource damageSource) {
++        super.die(damageSource);
++
++        if (this.resetHealthOnDeath) {
++            this.setHealth(20.0F);
++        }
++    }
++
++    @Override
++    public void tick() {
++        super.tick();
++
++        if (this.isExpired()) {
++            this.remove();
++        }
++    }
++
++    @Override
++    public boolean isClientAuthoritative() {
++        return false;
++    }
++
++    @Override
++    public void setChatSession(RemoteChatSession chatSession) {
++        // no-op: fake players don't have chat sessions
++    }
++
++    @Override
++    public @Nullable RemoteChatSession getChatSession() {
++        return null;
++    }
++
++    @Override
++    public void onEquipItem(EquipmentSlot slot, ItemStack previous, ItemStack stack) {
++        if (!this.isUsingItem()) {
++            super.onEquipItem(slot, previous, stack);
++        }
++    }
++}

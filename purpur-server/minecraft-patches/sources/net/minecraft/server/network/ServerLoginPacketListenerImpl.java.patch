@@ -1,5 +1,20 @@
 --- a/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 +++ b/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+@@ -213,6 +_,14 @@
+     private void verifyLoginAndFinishConnectionSetup(final GameProfile profile) {
+         PlayerList playerList = this.server.getPlayerList();
+         Component error = org.bukkit.craftbukkit.event.CraftEventFactory.handleLoginResult(playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(profile)), this.paperLoginConnection, this.connection, profile, this.server, true); // Paper
++        // WarpMC start - FakeServerPlayer: remove fake player when real player logs in
++        if (error == null) {
++            net.minecraft.server.level.FakeServerPlayer fakeExisting = org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().getNmsFakePlayer(profile.id());
++            if (fakeExisting != null) {
++                fakeExisting.remove();
++            }
++        }
++        // WarpMC end - FakeServerPlayer
+         if (error != null) {
+             this.disconnectAsync(error); // Paper
+         } else {
 @@ -284,7 +_,7 @@
                          ServerLoginPacketListenerImpl.LOGGER.warn("Failed to verify username but will let them in anyway!");
                          ServerLoginPacketListenerImpl.this.startClientVerification(ServerLoginPacketListenerImpl.this.createOfflineProfile(name)); // Spigot

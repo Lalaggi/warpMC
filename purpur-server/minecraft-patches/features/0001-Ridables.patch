@@ -18,10 +18,10 @@ index 33bc4b330abf8745a379eff0d79aabd2a1b7cd40..772136351beb00825388f79e66f3e053
              public boolean isClientAuthoritative() {
                  return false;
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index c26dd9cdd6fb0dcecc6a166dd71167c4a88a3d91..838898572cc30207a1b915dcea11f612254ac453 100644
+index 678a461d12262be957d212c64c68e85e21a51774..b82ef300f98a9fdee4a457164f6e6033ddee8b6e 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1866,6 +1866,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1867,6 +1867,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          for (ServerLevel level : this.getAllLevels()) {
              level.hasPhysicsEvent = org.bukkit.event.block.BlockPhysicsEvent.getHandlerList().getRegisteredListeners().length > 0; // Paper - BlockPhysicsEvent
              level.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0; // Paper - Add EntityMoveEvent
@@ -334,12 +334,12 @@ index 8569908576be0cb8f47ec94d065736f5e0fc114e..31cb7f27dc114f347b1667a3ad7e99d4
 +    // Purpur end - Ridables
  }
 diff --git a/net/minecraft/world/entity/ai/attributes/AttributeMap.java b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
-index 68bad6752bd313ca3ebde7fd4e3b2c46c5dee3ef..fe5f4f79e5a1b091d15fa3bfd876b831e493655c 100644
+index a44af8014ab2de6acbc08bee29c790e477e2a577..8c7d53680f354a776d30a74899cf325c6c26b8b7 100644
 --- a/net/minecraft/world/entity/ai/attributes/AttributeMap.java
 +++ b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
 @@ -18,14 +18,21 @@ public class AttributeMap {
-     private final Set<AttributeInstance> attributesToSync = new ObjectOpenHashSet<>();
-     private final Set<AttributeInstance> attributesToUpdate = new ObjectOpenHashSet<>();
+     private final Set<AttributeInstance> attributesToSync = new ReferenceOpenHashSet<>(0);
+     private final Set<AttributeInstance> attributesToUpdate = new ReferenceOpenHashSet<>(0);
      private final AttributeSupplier supplier;
 +    private final net.minecraft.world.entity.LivingEntity entity; // Purpur - Ridables
  
@@ -5188,7 +5188,7 @@ index f99d5379a83dc9aabe8c8fef52bb2b0cccc40e19..4c35ca3877b88b13a1919d0625e5055b
                  if (this.level().purpurConfig.wanderingTraderAllowTrading) { // Purpur - Add config for villager trading
                  this.setTradingPlayer(player);
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 7c4ae5904081da7b0e4c135c243f2d9cebb161d9..3b0a0525cdca3ea5b91834e04b42696a7cedde10 100644
+index 3f197cf6f03e5d4eb01ec7c6e1776d148c5846d7..543923879106b3b471abeaf931050d3b16284b6d 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -193,6 +193,19 @@ public abstract class Player extends Avatar implements ContainerUser {

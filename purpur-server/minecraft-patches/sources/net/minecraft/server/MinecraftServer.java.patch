@@ -86,6 +86,14 @@
                      // adjust ticksBehind so that it is not greater-than catchup
                      if (ticksBehind - catchup > 0L) {
                          final long difference = ticksBehind - catchup;
+@@ -1692,6 +_,7 @@
+         this.smoothedTickTimeMillis = this.smoothedTickTimeMillis * 0.8F + (float)tickTime / (float)TimeUtil.NANOSECONDS_PER_MILLISECOND * 0.19999999F;
+         this.logTickMethodTime(nano);
+         profiler.pop();
++        org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().tick(); // WarpMC - FakeServerPlayer timeout tick
+     }
+ 
+     protected void processPacketsAndTick(final boolean sprinting) {
 @@ -1973,7 +_,7 @@
      }
  
