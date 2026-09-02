@@ -69,15 +69,6 @@
 +                }
 +            }
 +            // Purpur end - config for startup commands
-+            // Purpur start - Migrate Setting to reintroduce end void rings
-+            if (org.purpurmc.purpur.configuration.transformation.FarEndTerrainGenerationMigration.HAS_BEEN_REGISTERED) {
-+                try {
-+                    org.purpurmc.purpur.PurpurConfig.config.save((java.io.File) this.options.valueOf("purpur-settings"));
-+                } catch (IOException ex) {
-+                    org.bukkit.Bukkit.getLogger().log(java.util.logging.Level.SEVERE, "Could not save " + this.options.valueOf("purpur-settings"), ex);
-+                }
-+            }
-+            // Purpur end - Migrate Setting to reintroduce end void rings
 +
              while (this.running) {
                  final long tickStart = System.nanoTime(); // Paper - improve tick loop

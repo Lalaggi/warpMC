@@ -196,11 +196,7 @@
              player.connection.send(new ClientboundEntityEventPacket(player, eventId));
          }
  
-@@ -868,11 +_,32 @@
-         player.getBukkitEntity().recalculatePermissions(); // CraftBukkit
-         this.server.getCommands().sendCommands(player);
-         } // Paper - Add sendOpLevel API
-     }
+@@ -872,7 +_,7 @@
  
      // Paper start - whitelist verify event / login event
      public LoginResult canBypassFullServerLogin(final NameAndId nameAndId, final LoginResult currentResult) {
