@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/ai/goal/LlamaFollowCaravanGoal.java
 +++ b/net/minecraft/world/entity/ai/goal/LlamaFollowCaravanGoal.java
-@@ -3,7 +3,6 @@
+@@ -3,7 +_,6 @@
  import java.util.EnumSet;
  import java.util.List;
  import net.minecraft.world.entity.Entity;
@@ -8,7 +8,7 @@
  import net.minecraft.world.entity.animal.equine.Llama;
  import net.minecraft.world.entity.decoration.LeashFenceKnotEntity;
  import net.minecraft.world.phys.Vec3;
-@@ -22,14 +21,16 @@
+@@ -22,14 +_,16 @@
  
      @Override
      public boolean canUse() {
@@ -28,7 +28,7 @@
                  Llama candidate = (Llama)entity;
                  if (candidate.inCaravan() && !candidate.hasCaravanTail()) {
                      double distSquare = this.llama.distanceToSqr(candidate);
-@@ -74,6 +75,7 @@
+@@ -74,6 +_,7 @@
  
      @Override
      public boolean canContinueToUse() {

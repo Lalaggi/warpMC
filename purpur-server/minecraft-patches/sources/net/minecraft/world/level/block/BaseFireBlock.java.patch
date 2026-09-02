@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/BaseFireBlock.java
 +++ b/net/minecraft/world/level/block/BaseFireBlock.java
-@@ -215,8 +215,8 @@
+@@ -215,8 +_,8 @@
          BlockPos.MutableBlockPos testPos = pos.mutable();
          boolean hasObsidian = false;
  

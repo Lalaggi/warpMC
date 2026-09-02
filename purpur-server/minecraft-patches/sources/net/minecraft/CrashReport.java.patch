@@ -1,6 +1,6 @@
 --- a/net/minecraft/CrashReport.java
 +++ b/net/minecraft/CrashReport.java
-@@ -30,6 +30,7 @@
+@@ -30,6 +_,7 @@
      private boolean trackingStackTrace = true;
      private StackTraceElement[] uncategorizedStackTrace = new StackTraceElement[0];
      private final SystemReport systemReport = new SystemReport();
@@ -8,7 +8,7 @@
  
      public CrashReport(final String title, final Throwable t) {
          this.title = title;
-@@ -126,7 +127,7 @@
+@@ -126,7 +_,7 @@
      }
  
      public String getFriendlyReport(final ReportType reportType) {
@@ -17,7 +17,7 @@
      }
  
      public @Nullable Path getSaveFile() {
-@@ -156,7 +157,7 @@
+@@ -156,7 +_,7 @@
      }
  
      public boolean saveToFile(final Path file, final ReportType reportType) {

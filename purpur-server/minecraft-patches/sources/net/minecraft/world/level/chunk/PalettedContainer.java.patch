@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/chunk/PalettedContainer.java
 +++ b/net/minecraft/world/level/chunk/PalettedContainer.java
-@@ -117,7 +117,7 @@
+@@ -117,7 +_,7 @@
  
              for (T presetValue : presetValues) {
                  if (this.data.palette.getSize() >= maxSize) {

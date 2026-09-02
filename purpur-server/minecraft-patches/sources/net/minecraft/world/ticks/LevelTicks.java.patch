@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/ticks/LevelTicks.java
 +++ b/net/minecraft/world/ticks/LevelTicks.java
-@@ -256,26 +256,46 @@
+@@ -256,26 +_,46 @@
      }
  
      public void copyAreaFrom(final LevelTicks<T> source, final BoundingBox area, final Vec3i offset) {

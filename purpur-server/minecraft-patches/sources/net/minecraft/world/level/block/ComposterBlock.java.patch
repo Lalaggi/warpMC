@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/ComposterBlock.java
 +++ b/net/minecraft/world/level/block/ComposterBlock.java
-@@ -49,6 +49,8 @@
+@@ -49,6 +_,8 @@
      public static final IntegerProperty LEVEL = BlockStateProperties.LEVEL_COMPOSTER;
      public static final Object2FloatMap<ItemLike> COMPOSTABLES = new Object2FloatOpenHashMap<>();
      private static final int HOLE_WIDTH = 12;
@@ -9,7 +9,7 @@
      private static final VoxelShape[] SHAPES = Util.make(
          () -> {
              VoxelShape[] shapes = Block.boxes(
-@@ -256,17 +258,27 @@
+@@ -256,17 +_,27 @@
      ) {
          int fillLevel = state.getValue(LEVEL);
          if (fillLevel < 8 && COMPOSTABLES.containsKey(itemStack.getItem())) {
@@ -23,6 +23,7 @@
 -                level.levelEvent(LevelEvent.COMPOSTER_FILL, pos, state != newState ? 1 : 0);
 -                player.awardStat(Stats.ITEM_USED.get(itemStack.getItem()));
 -                itemStack.consume(1, player);
+-            }
 +            // Purpur start - sneak to bulk process composter
 +            BlockState newState = process(fillLevel, player, state, level, pos, itemStack);
 +            if (newState == null) {
@@ -42,12 +43,12 @@
 +                    newCount = itemStack.getCount();
 +                    newLevel = newState.getValue(ComposterBlock.LEVEL);
 +                } while (newCount > 0 && (newCount != oldCount || newLevel != oldLevel || newState != oldState));
-             }
++            }
 +            // Purpur end - Sneak to bulk process composter
  
              return InteractionResult.SUCCESS;
          } else {
-@@ -274,6 +286,25 @@
+@@ -274,6 +_,25 @@
          }
      }
  
@@ -73,7 +74,7 @@
      @Override
      protected InteractionResult useWithoutItem(
          final BlockState state, final Level level, final BlockPos pos, final Player player, final BlockHitResult hitResult
-@@ -434,7 +465,7 @@
+@@ -434,7 +_,7 @@
  
          @Override
          public int[] getSlotsForFace(final Direction direction) {
@@ -82,7 +83,7 @@
          }
  
          @Override
-@@ -469,7 +500,7 @@
+@@ -469,7 +_,7 @@
  
          @Override
          public int[] getSlotsForFace(final Direction direction) {
@@ -91,7 +92,7 @@
          }
  
          @Override
-@@ -520,7 +551,7 @@
+@@ -520,7 +_,7 @@
  
          @Override
          public int[] getSlotsForFace(final Direction direction) {

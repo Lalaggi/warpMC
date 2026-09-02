@@ -1,6 +1,6 @@
 --- a/net/minecraft/commands/Commands.java
 +++ b/net/minecraft/commands/Commands.java
-@@ -267,11 +267,11 @@
+@@ -267,11 +_,11 @@
              JfrCommand.register(this.dispatcher);
          }
  
@@ -14,7 +14,7 @@
              RaidCommand.register(this.dispatcher, context);
              DebugPathCommand.register(this.dispatcher);
              DebugMobSpawningCommand.register(this.dispatcher);
-@@ -299,6 +299,14 @@
+@@ -299,6 +_,14 @@
              StopCommand.register(this.dispatcher);
              TransferCommand.register(this.dispatcher);
              WhitelistCommand.register(this.dispatcher);
@@ -29,7 +29,7 @@
          }
  
          if (commandSelection.includeIntegrated) {
-@@ -475,6 +483,11 @@
+@@ -475,6 +_,11 @@
      }
  
      public void sendCommands(final ServerPlayer player) {
@@ -41,7 +41,7 @@
          // Paper start - Send empty commands if tab completion is disabled
          if (org.spigotmc.SpigotConfig.tabComplete < 0) {
              player.connection.send(new ClientboundCommandsPacket(new RootCommandNode<>(), COMMAND_NODE_INSPECTOR));
-@@ -521,6 +534,7 @@
+@@ -521,6 +_,7 @@
      private void runSync(ServerPlayer player, java.util.Collection<String> bukkit, RootCommandNode<CommandSourceStack> root) {
          // Paper end - Perf: Async command map building
          new com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent<CommandSourceStack>(player.getBukkitEntity(), (RootCommandNode) root, true).callEvent(); // Paper - Brigadier API
@@ -49,7 +49,7 @@
          org.bukkit.event.player.PlayerCommandSendEvent event = new org.bukkit.event.player.PlayerCommandSendEvent(player.getBukkitEntity(), new java.util.LinkedHashSet<>(bukkit));
          event.getPlayer().getServer().getPluginManager().callEvent(event);
  
-@@ -531,6 +545,8 @@
+@@ -531,6 +_,8 @@
              }
          }
          // CraftBukkit end

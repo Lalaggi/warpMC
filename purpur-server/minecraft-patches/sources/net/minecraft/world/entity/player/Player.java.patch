@@ -6,7 +6,6 @@
      public net.kyori.adventure.util.TriState flyingFallDamage = net.kyori.adventure.util.TriState.NOT_SET; // Paper - flying fall damage
 +    public int burpDelay = 0; // Purpur - Burp delay
 +    public boolean canPortalInstant = false; // Purpur - Add portal permission bypass
-+    public int sixRowEnderchestSlotCount = -1; // Purpur - Barrels and enderchests 6 rows
  
      // CraftBukkit start
      public boolean fauxSleeping;
@@ -25,19 +24,6 @@
      }
      // CraftBukkit end
  
-+    // Purpur start - Ridables
-+    public abstract void resetLastActionTime();
-+
-+    @Override
-+    public boolean processClick(InteractionHand hand) {
-+        Entity vehicle = getRootVehicle();
-+        if (vehicle != null && vehicle.getRider() == this) {
-+            return vehicle.onClick(hand);
-+        }
-+        return false;
-+    }
-+    // Purpur end - Ridables
-+
      public Player(final Level level, final GameProfile gameProfile) {
          super(EntityType.PLAYER, level);
          this.setUUID(gameProfile.id());

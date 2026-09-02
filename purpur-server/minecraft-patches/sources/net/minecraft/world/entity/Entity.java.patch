@@ -48,21 +48,6 @@
 +    }
 +    // Purpur end - Add canSaveToDisk to Entity
 +
-+    // Purpur start - copied from Mob - API for any mob to burn daylight
-+    public boolean isSunBurnTick() {
-+        if (!this.level().isClientSide() && this.level().environmentAttributes().getValue(EnvironmentAttributes.MONSTERS_BURN, this.position())) {
-+            float br = this.getLightLevelDependentMagicValue();
-+            BlockPos roundedPos = BlockPos.containing(this.getX(), this.getEyeY(), this.getZ());
-+            boolean isInNonBurnableBlock = this.isInWaterOrRain() || this.isInPowderSnow || this.wasInPowderSnow;
-+            if (br > 0.5F && this.random.nextFloat() * 30.0F < (br - 0.4F) * 2.0F && !isInNonBurnableBlock && this.level().canSeeSky(roundedPos)) {
-+                return true;
-+            }
-+        }
-+
-+        return false;
-+    }
-+    // Purpur end - copied from Mob - API for any mob to burn daylight
-+
      public Entity(final EntityType<?> type, final Level level) {
          this.type = type;
          this.level = level;
@@ -168,13 +153,6 @@
  
              this.passengers = ImmutableList.copyOf(newPassengers);
          }
-+
-+        // Purpur start - Ridables
-+        if (isRidable() && this.passengers.get(0) == passenger && passenger instanceof Player player) {
-+            onMount(player);
-+            this.rider = player;
-+        }
-+        // Purpur end - Ridables
      }
  
      // Paper start - Force entity dismount during teleportation
@@ -182,14 +160,6 @@
              return false;
          }
          // CraftBukkit end
-+
-+        // Purpur start - Ridables
-+        if (this.rider != null && this.passengers.get(0) == this.rider) {
-+            onDismount(this.rider);
-+            this.rider = null;
-+        }
-+        // Purpur end - Ridables
-+
          if (this.passengers.size() == 1 && this.passengers.get(0) == passenger) {
              this.passengers = ImmutableList.of();
          } else {
@@ -248,44 +218,4 @@
          return ((ServerLevel) this.level()).isPositionEntityTicking(this.blockPosition());
      }
      // Paper end - Expose entity id counter
-+    // Purpur start - Ridables
-+    @Nullable
-+    private Player rider = null;
-+
-+    @Nullable
-+    public Player getRider() {
-+        return rider;
-+    }
-+
-+    public boolean isRidable() {
-+        return false;
-+    }
-+
-+    public boolean isControllable() {
-+        return true;
-+    }
-+
-+    public void onMount(Player rider) {
-+        if (this instanceof Mob) {
-+            ((Mob) this).setTarget(null, null);
-+            ((Mob) this).getNavigation().stop();
-+        }
-+        rider.setJumping(false); // fixes jump on mount
-+    }
-+
-+    public void onDismount(Player player) {
-+    }
-+
-+    public boolean onSpacebar() {
-+        return false;
-+    }
-+
-+    public boolean onClick(InteractionHand hand) {
-+        return false;
-+    }
-+
-+    public boolean processClick(InteractionHand hand) {
-+        return false;
-+    }
-+    // Purpur end - Ridables
  }

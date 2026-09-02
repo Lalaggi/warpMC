@@ -34,15 +34,6 @@
          this.trackEnteredOrExitedLavaOnVehicle();
          this.updatePlayerAttributes();
          this.advancements.flushDirty(this, true);
-+
-+        // Purpur start - Ridables
-+        if (this.level().purpurConfig.useNightVisionWhenRiding && this.getVehicle() != null && this.getVehicle().getRider() == this && this.level().getGameTime() % 100 == 0) { // 5 seconds
-+            MobEffectInstance nightVision = this.getEffect(MobEffects.NIGHT_VISION);
-+            if (nightVision == null || nightVision.getDuration() <= 300) { // 15 seconds
-+                this.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0)); // 20 seconds
-+            }
-+        }
-+        // Purpur end - Ridables
      }
  
      private void updatePlayerAttributes() {
@@ -60,11 +51,6 @@
  
 +        // Purpur start - Add boat fall damage config
 +        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
-+            // Purpur start - Minecart settings and WASD controls
-+            if (getRootVehicle() instanceof AbstractMinecart && level().purpurConfig.minecartControllable && !level().purpurConfig.minecartControllableFallDamage) {
-+                return false;
-+            }
-+            // Purpur end - Minecart settings and WASD controls
 +            if (getRootVehicle() instanceof net.minecraft.world.entity.vehicle.boat.Boat && !level().purpurConfig.boatsDoFallDamage) {
 +                return false;
 +            }

@@ -1,6 +1,6 @@
 --- a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
 +++ b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
-@@ -70,7 +70,8 @@
+@@ -70,7 +_,8 @@
      public static final int ENTITY_TICKING_TICKET_LEVEL = ChunkLevel.ENTITY_TICKING_LEVEL;
      public static final int MAX_TICKET_LEVEL = ChunkLevel.MAX_LEVEL; // inclusive
  

@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/ServerExplosion.java
 +++ b/net/minecraft/world/level/ServerExplosion.java
-@@ -48,7 +48,8 @@
+@@ -48,7 +_,8 @@
      private final float radius;
      private final DamageSource damageSource;
      private final ExplosionDamageCalculator damageCalculator;
@@ -10,7 +10,7 @@
      // CraftBukkit - add field
      public boolean wasCanceled = false;
      public float yield;
-@@ -623,6 +624,23 @@
+@@ -623,6 +_,23 @@
      }
  
      public int explode() {

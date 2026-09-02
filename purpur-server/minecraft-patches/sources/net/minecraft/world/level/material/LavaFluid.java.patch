@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/material/LavaFluid.java
 +++ b/net/minecraft/world/level/material/LavaFluid.java
-@@ -141,7 +141,7 @@
+@@ -141,7 +_,7 @@
      }
  
      private boolean hasFlammableNeighbours(final LevelReader level, final BlockPos pos) {
@@ -9,7 +9,7 @@
              if (this.isFlammable(level, pos.relative(direction))) {
                  return true;
              }
-@@ -191,7 +191,7 @@
+@@ -191,7 +_,7 @@
  
      @Override
      public int getTickDelay(final LevelReader level) {
@@ -18,17 +18,17 @@
      }
  
      @Override
-@@ -213,6 +213,13 @@
+@@ -212,6 +_,13 @@
+     private void fizz(final LevelAccessor level, final BlockPos pos) {
          level.levelEvent(LevelEvent.LAVA_FIZZ, pos, 0);
      }
- 
++
 +    // Purpur start - Implement infinite liquids
 +    @Override
 +    protected int getRequiredSources(Level level) {
 +        return level.purpurConfig.lavaInfiniteRequiredSources;
 +    }
 +    // Purpur end - Implement infinite liquids
-+
+ 
      @Override
      protected boolean canConvertToSource(final ServerLevel level) {
-         return level.getGameRules().get(GameRules.LAVA_SOURCE_CONVERSION);

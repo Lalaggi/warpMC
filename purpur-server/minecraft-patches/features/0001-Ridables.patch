@@ -18,7 +18,7 @@ index 33bc4b330abf8745a379eff0d79aabd2a1b7cd40..772136351beb00825388f79e66f3e053
              public boolean isClientAuthoritative() {
                  return false;
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 678a461d12262be957d212c64c68e85e21a51774..b82ef300f98a9fdee4a457164f6e6033ddee8b6e 100644
+index b27cf76d9a4ac7932c0dc64a84cb6bef5abf8e9e..b82ef300f98a9fdee4a457164f6e6033ddee8b6e 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -1867,6 +1867,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -42,7 +42,7 @@ index 316fece122a3b71b5c809ed15c46c8cb37d1cdbf..ba1dba4903c8d3c023e9555af67e5d62
      @Override
      public @Nullable LevelChunk getChunkIfLoaded(int x, int z) {
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 3b655453f22be6eb65ea8b32f79e9d9b953120ee..228c81791dcc1ea0971e70bcb0cb289106466c67 100644
+index 8f43b77335693a0fb73af6a494befacd990d8db6..228c81791dcc1ea0971e70bcb0cb289106466c67 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -776,6 +776,15 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -75,7 +75,7 @@ index cf05034e3f37508466c61a41533e3f6c3ef2e3a5..3671945aa5d94052629c97dfbf6de581
                          if (itemType == Items.WATER_BUCKET && target instanceof net.minecraft.world.entity.animal.Bucketable && target instanceof LivingEntity && resendData) {
                              target.resendPossiblyDesyncedEntityData(ServerGamePacketListenerImpl.this.player); // Paper - The entire mob gets deleted, so resend it
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index a4a0683c0287da0543a5c869163c925f899b1550..241ff14c2c27204fc8615b19700f946afdcfa2d1 100644
+index 8b26f46e8c4579e0942dfac945c71c9794162c36..241ff14c2c27204fc8615b19700f946afdcfa2d1 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
 @@ -3400,6 +3400,13 @@ public abstract class Entity
