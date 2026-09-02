@@ -5,7 +5,7 @@ Subject: [PATCH] Setting to reintroduce end void rings
 
 
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 838898572cc30207a1b915dcea11f612254ac453..d2a5a1293f276aab3136c4563d778d0d79c7ff29 100644
+index b82ef300f98a9fdee4a457164f6e6033ddee8b6e..d2a5a1293f276aab3136c4563d778d0d79c7ff29 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
 @@ -1351,6 +1351,15 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
