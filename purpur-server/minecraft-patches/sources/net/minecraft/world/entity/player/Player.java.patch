@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -173,17 +173,40 @@
+@@ -173,11 +_,20 @@
      public float hurtDir;
      public boolean affectsSpawning = true; // Paper - Affects Spawning API
      public net.kyori.adventure.util.TriState flyingFallDamage = net.kyori.adventure.util.TriState.NOT_SET; // Paper - flying fall damage
@@ -21,13 +21,7 @@
      @Override
      public org.bukkit.craftbukkit.entity.CraftHumanEntity getBukkitEntity() {
          return (org.bukkit.craftbukkit.entity.CraftHumanEntity) super.getBukkitEntity();
-     }
-     // CraftBukkit end
- 
-     public Player(final Level level, final GameProfile gameProfile) {
-         super(EntityType.PLAYER, level);
-         this.setUUID(gameProfile.id());
-@@ -242,6 +265,12 @@
+@@ -242,6 +_,12 @@
  
      @Override
      public void tick() {
@@ -40,7 +34,7 @@
          this.noPhysics = this.isSpectator();
          if (this.isSpectator() || this.isPassenger()) {
              this.setOnGround(false);
-@@ -299,6 +328,17 @@
+@@ -299,6 +_,17 @@
              this.turtleHelmetTick();
          }
  
@@ -58,7 +52,7 @@
          this.cooldowns.tick();
          this.updatePlayerPose();
      }
-@@ -504,7 +544,7 @@
+@@ -504,7 +_,7 @@
              List<Entity> orbs = Lists.newArrayList();
  
              for (Entity entity : entities) {
@@ -67,7 +61,7 @@
                      orbs.add(entity);
                  } else if (!entity.isRemoved()) {
                      this.touch(entity);
-@@ -1052,7 +1092,7 @@
+@@ -1052,7 +_,7 @@
                      criticalAttack = criticalAttack && !this.level().paperConfig().entities.behavior.disablePlayerCrits; // Paper - Toggleable player crits
                      if (criticalAttack) {
                          damageSource = damageSource.critical(); // Paper - critical damage API
@@ -76,7 +70,7 @@
                      }
  
                      float totalDamage = baseDamage + magicBoost;
-@@ -1215,7 +1255,9 @@
+@@ -1215,7 +_,9 @@
              // Paper end - Configurable sprint interruption on attack
          }
  
@@ -87,7 +81,7 @@
              // CraftBukkit start - Add Velocity Event
              boolean cancelled = false;
              org.bukkit.entity.Player player = (org.bukkit.entity.Player) entity.getBukkitEntity();
-@@ -1748,7 +1790,23 @@
+@@ -1748,7 +_,23 @@
  
      @Override
      protected int getBaseExperienceReward(final ServerLevel level) {
@@ -112,17 +106,17 @@
      }
  
      @Override
-@@ -1792,6 +1850,13 @@
+@@ -1791,6 +_,13 @@
+     public boolean addItem(final ItemStack itemStack) {
          return this.inventory.add(itemStack);
      }
- 
++
 +    // Purpur start - Player ridable in water option
 +    @Override
 +    public boolean dismountsUnderwater() {
 +        return !level().purpurConfig.playerRidableInWater;
 +    }
 +    // Purpur end - Player ridable in water option
-+
+ 
      public abstract @Nullable GameType gameMode();
  
-     @Override
