@@ -70,6 +70,10 @@ build:
     - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
     - mkdir -p "$GRADLE_USER_HOME"
+    # Paperweight caches vanilla decompiled jar + ATs; when patches change the cached decompile is stale and causes "invalid object" / "lacks necessary blobs" on feature patches (seen on 7597878c Ridables). Purge paperweight cache so applyAllPatches re-decompiles from current patches.
+    - rm -rf .gradle-home/caches/paperweight purpur-server/.gradle/caches/paperweight .gradle/caches/paperweight || true
+    # Also ensure no leftover build/src state from previous pipeline's cache
+    - ./gradlew clean --stacktrace || true
   script:
     - ./gradlew applyAllPatches --stacktrace
     - ./gradlew build --stacktrace
@@ -110,6 +114,8 @@ verify-patches:
     - git config --global user.email "ci@warpmc.local"
     - git config --global user.name "WarpMC CI"
     - chmod +x ./gradlew
+    - rm -rf .gradle-home/caches/paperweight purpur-server/.gradle/caches/paperweight .gradle/caches/paperweight || true
+    - ./gradlew clean --stacktrace || true
   script:
     - ./gradlew applyAllPatches --stacktrace
     - echo "Patches applied successfully"
