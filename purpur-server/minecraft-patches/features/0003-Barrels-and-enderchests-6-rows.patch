@@ -5,7 +5,7 @@ Subject: [PATCH] Barrels and enderchests 6 rows
 
 
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index f8d1f4f9996a29fdaaa3b738bbeb0410fa1f9639..cf0818985d834b372c2698bd41addd49b156c23f 100644
+index d178783489a97b547e766e8c72f0abed6e7573df..cf0818985d834b372c2698bd41addd49b156c23f 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
 @@ -914,6 +914,27 @@ public abstract class PlayerList {
