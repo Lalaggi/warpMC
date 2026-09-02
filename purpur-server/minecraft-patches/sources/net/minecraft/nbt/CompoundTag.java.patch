@@ -1,6 +1,6 @@
 --- a/net/minecraft/nbt/CompoundTag.java
 +++ b/net/minecraft/nbt/CompoundTag.java
-@@ -389,7 +_,7 @@
+@@ -389,7 +389,7 @@
      }
  
      protected CompoundTag shallowCopy() {

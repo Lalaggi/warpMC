@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/levelgen/material/MaterialRuleList.java
 +++ b/net/minecraft/world/level/levelgen/material/MaterialRuleList.java
-@@ -8,8 +_,9 @@
+@@ -8,8 +8,9 @@
  public record MaterialRuleList(NoiseChunk.BlockStateFiller[] materialRuleList) implements NoiseChunk.BlockStateFiller {
      @Override
      public @Nullable BlockState calculate(final DensityFunction.FunctionContext context) {

@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -151,12 +_,16 @@
+@@ -151,12 +151,16 @@
          this.ops = new ServerOpList(OPLIST_FILE, notificationService);
          this.bans = new UserBanList(USERBANLIST_FILE, notificationService);
          this.ipBans = new IpBanList(IPBANLIST_FILE, notificationService);
@@ -18,7 +18,7 @@
          player.loginTime = System.currentTimeMillis(); // Paper - Replace OfflinePlayer#getLastPlayed
          NameAndId gameProfile = player.nameAndId();
          UserNameToIdResolver profileCache = this.server.services().nameToIdCache();
-@@ -167,10 +_,17 @@
+@@ -167,10 +171,17 @@
          ServerLevel level = player.level();
          String address = connection.getLoggableAddress(this.server.logIPs());
          LevelData levelData = level.getLevelData();
@@ -40,7 +40,7 @@
          playerConnection.suspendFlushing();
          GameRules gameRules = level.getGameRules();
          boolean immediateRespawn = gameRules.get(GameRules.IMMEDIATE_RESPAWN);
-@@ -239,6 +_,11 @@
+@@ -239,6 +250,11 @@
          player.containerMenu.transferTo(player.containerMenu, bukkitPlayer);
  
          org.bukkit.event.player.PlayerJoinEvent playerJoinEvent = new org.bukkit.event.player.PlayerJoinEvent(bukkitPlayer, io.papermc.paper.adventure.PaperAdventure.asAdventure(component)); // Paper - Adventure
@@ -52,7 +52,7 @@
          this.cserver.getPluginManager().callEvent(playerJoinEvent);
  
          if (!player.connection.isAcceptingMessages()) {
-@@ -248,8 +_,11 @@
+@@ -248,8 +264,11 @@
          final net.kyori.adventure.text.Component jm = playerJoinEvent.joinMessage();
  
          if (jm != null && !jm.equals(net.kyori.adventure.text.Component.empty())) { // Paper - Adventure
@@ -66,7 +66,7 @@
          }
          // CraftBukkit end
  
-@@ -312,6 +_,7 @@
+@@ -312,6 +331,7 @@
              scoreboard.addPlayerToTeam(player.getScoreboardName(), collideRuleTeam);
          }
          // Paper end - Configurable player collision
@@ -74,7 +74,19 @@
          // CraftBukkit start - moved down
          LOGGER.info(
              "{}[{}] logged in with entity id {} at ([{}]{}, {}, {})", // Paper - add world identifier
-@@ -432,6 +_,7 @@
+@@ -412,6 +432,11 @@
+     }
+ 
+     protected void save(final ServerPlayer player) {
++        // WarpMC start - FakeServerPlayer: don't overwrite real playerdata with fake's data (same UUID)
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer) {
++            return;
++        }
++        // WarpMC end
+         if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
+         player.lastSave = MinecraftServer.currentTick; // Paper - Incremental chunk and player saving
+         this.playerIo.save(player);
+@@ -432,6 +457,7 @@
      }
      public net.kyori.adventure.text.@Nullable Component remove(final ServerPlayer player, final net.kyori.adventure.text.Component leaveMessage) {
          // Paper end - Fix kick event leave message not being sent
@@ -82,7 +94,7 @@
          ServerLevel level = player.level();
          player.awardStat(Stats.LEAVE_GAME);
          // CraftBukkit start - Quitting must be before we do final save of data, in case plugins need to modify it
-@@ -440,7 +_,12 @@
+@@ -440,7 +466,12 @@
              player.closeContainer(org.bukkit.event.inventory.InventoryCloseEvent.Reason.DISCONNECT); // Paper - Inventory close reason
          }
  
@@ -95,8 +107,41 @@
          this.cserver.getPluginManager().callEvent(playerQuitEvent);
          player.getBukkitEntity().disconnect();
  
-@@ -604,7 +_,25 @@
+@@ -464,6 +495,17 @@
+         }
+         // Paper end - Drop carried item when player has disconnected
+         this.save(player);
++        // WarpMC start - FakeServerPlayer: ensure chunk tickets are released for fakes (mirror addPlayer gate)
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer) {
++            try {
++                ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) level)
++                    .moonrise$getPlayerChunkLoader().removePlayer(player);
++            } catch (Exception ignored) {}
++            try {
++                ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) player.level())
++                    .moonrise$getPlayerChunkLoader().removePlayer(player);
++            } catch (Exception ignored2) {}
++        }
+         if (player.isPassenger()) {
+             Entity vehicle = player.getRootVehicle();
+             if (vehicle.hasExactlyOnePlayerPassenger()) {
+@@ -602,9 +644,40 @@
+         // Paper end - respawn event
+         this.players.remove(serverPlayer);
          this.playersByName.remove(serverPlayer.getScoreboardName().toLowerCase(java.util.Locale.ROOT)); // Paper
++        // WarpMC start - FakeServerPlayer: ensure old fake's chunk loader tickets are released before respawn
++        if (serverPlayer instanceof net.minecraft.server.level.FakeServerPlayer) {
++            try {
++                ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) serverPlayer.level())
++                    .moonrise$getPlayerChunkLoader().removePlayer(serverPlayer);
++            } catch (Exception ignored) {}
++            if (serverPlayer.level() != respawnInfo.newLevel()) {
++                try {
++                    ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) respawnInfo.newLevel())
++                        .moonrise$getPlayerChunkLoader().removePlayer(serverPlayer);
++                } catch (Exception ignored2) {}
++            }
++        }
          serverPlayer.level().removePlayerImmediately(serverPlayer, removalReason);
          ServerLevel level = respawnInfo.newLevel();
 -        ServerPlayer player = serverPlayer; // Paper - TODO - recreate instance
@@ -122,7 +167,7 @@
          player.connection = serverPlayer.connection;
          player.restoreFrom(serverPlayer, keepAllPlayerData);
          player.setId(serverPlayer.getId());
-@@ -768,6 +_,20 @@
+@@ -768,6 +841,20 @@
          }
      }
  
@@ -143,7 +188,7 @@
      public void broadcastAll(final Packet<?> packet, final ResourceKey<Level> dimension) {
          for (ServerPlayer player : this.players) {
              if (player.level().dimension() == dimension) {
-@@ -861,6 +_,7 @@
+@@ -861,6 +948,7 @@
                  case ADMINS -> EntityEvent.PERMISSION_LEVEL_ADMINS;
                  case OWNERS -> EntityEvent.PERMISSION_LEVEL_OWNERS;
              };
@@ -151,7 +196,32 @@
              player.connection.send(new ClientboundEntityEventPacket(player, eventId));
          }
  
-@@ -872,7 +_,7 @@
+@@ -868,11 +956,32 @@
+         player.getBukkitEntity().recalculatePermissions(); // CraftBukkit
+         this.server.getCommands().sendCommands(player);
+         } // Paper - Add sendOpLevel API
++
++        // Purpur start - Barrels and enderchests 6 rows
++        if (org.purpurmc.purpur.PurpurConfig.enderChestSixRows && org.purpurmc.purpur.PurpurConfig.enderChestPermissionRows) {
++            org.bukkit.craftbukkit.entity.CraftHumanEntity bukkit = player.getBukkitEntity();
++            if (bukkit.hasPermission("purpur.enderchest.rows.six")) {
++                player.sixRowEnderchestSlotCount = 54;
++            } else if (bukkit.hasPermission("purpur.enderchest.rows.five")) {
++                player.sixRowEnderchestSlotCount = 45;
++            } else if (bukkit.hasPermission("purpur.enderchest.rows.four")) {
++                player.sixRowEnderchestSlotCount = 36;
++            } else if (bukkit.hasPermission("purpur.enderchest.rows.three")) {
++                player.sixRowEnderchestSlotCount = 27;
++            } else if (bukkit.hasPermission("purpur.enderchest.rows.two")) {
++                player.sixRowEnderchestSlotCount = 18;
++            } else if (bukkit.hasPermission("purpur.enderchest.rows.one")) {
++                player.sixRowEnderchestSlotCount = 9;
++            }
++        } else {
++            player.sixRowEnderchestSlotCount = -1;
++        }
++        // Purpur end - Barrels and enderchests 6 rows
+     }
  
      // Paper start - whitelist verify event / login event
      public LoginResult canBypassFullServerLogin(final NameAndId nameAndId, final LoginResult currentResult) {

@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/redstone/DefaultRedstoneWireEvaluator.java
++++ b/net/minecraft/world/level/redstone/DefaultRedstoneWireEvaluator.java
+@@ -34,7 +34,7 @@
+             Set<BlockPos> toUpdate = Sets.newHashSet();
+             toUpdate.add(pos);
+ 
+-            for (Direction direction : Direction.values()) {
++            for (Direction direction : Direction.ALL) {
+                 toUpdate.add(pos.relative(direction));
+             }
+ 

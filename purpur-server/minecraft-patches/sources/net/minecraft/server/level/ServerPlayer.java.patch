@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
-@@ -435,6 +_,9 @@
+@@ -435,6 +435,9 @@
      public boolean isRealPlayer; // Paper
      public com.destroystokyo.paper.event.entity.@Nullable PlayerNaturallySpawnCreaturesEvent playerNaturallySpawnedEvent; // Paper - PlayerNaturallySpawnCreaturesEvent
      public org.bukkit.event.player.PlayerQuitEvent.@Nullable QuitReason quitReason = null; // Paper - Add API for quit reason; there are a lot of changes to do if we change all methods leading to the event
@@ -10,7 +10,7 @@
  
      // Paper start - rewrite chunk system
      private ca.spottedleaf.moonrise.patches.chunk_system.player.RegionizedPlayerChunkLoader.PlayerChunkLoaderData chunkLoader;
-@@ -508,6 +_,9 @@
+@@ -508,6 +511,9 @@
          this.respawnConfig = input.read("respawn", ServerPlayer.RespawnConfig.CODEC).orElse(null);
          this.spawnExtraParticlesOnFall = input.getBooleanOr("spawn_extra_particles_on_fall", false);
          this.raidOmenPosition = input.read("raid_omen_position", BlockPos.CODEC).orElse(null);
@@ -20,7 +20,7 @@
          // Paper start - Expand PlayerGameModeChangeEvent
          this.loadGameTypes(input);
      }
-@@ -549,6 +_,9 @@
+@@ -549,6 +555,9 @@
              output.store("ShoulderEntityRight", CompoundTag.CODEC, this.getShoulderEntityRight());
          }
          this.getBukkitEntity().setExtraData(output); // CraftBukkit
@@ -30,7 +30,23 @@
      }
  
      private void saveParentVehicle(final ValueOutput playerOutput) {
-@@ -1179,6 +_,7 @@
+@@ -767,6 +776,15 @@
+         this.trackEnteredOrExitedLavaOnVehicle();
+         this.updatePlayerAttributes();
+         this.advancements.flushDirty(this, true);
++
++        // Purpur start - Ridables
++        if (this.level().purpurConfig.useNightVisionWhenRiding && this.getVehicle() != null && this.getVehicle().getRider() == this && this.level().getGameTime() % 100 == 0) { // 5 seconds
++            MobEffectInstance nightVision = this.getEffect(MobEffects.NIGHT_VISION);
++            if (nightVision == null || nightVision.getDuration() <= 300) { // 15 seconds
++                this.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0)); // 20 seconds
++            }
++        }
++        // Purpur end - Ridables
+     }
+ 
+     private void updatePlayerAttributes() {
+@@ -1179,6 +1197,7 @@
              // Paper - moved up to sendClientboundPlayerCombatKillPacket()
              sendClientboundPlayerCombatKillPacket(event.getShowDeathMessages(), deathScreenMessage); // Paper - Expand PlayerDeathEvent
              Team team = this.getTeam();
@@ -38,12 +54,17 @@
              if (team == null || team.getDeathMessageVisibility() == Team.Visibility.ALWAYS) {
                  this.server.getPlayerList().broadcastSystemMessage(deathMessage, false);
              } else if (team.getDeathMessageVisibility() == Team.Visibility.HIDE_FOR_OTHER_TEAMS) {
-@@ -1288,6 +_,13 @@
+@@ -1288,6 +1307,18 @@
              return false;
          }
  
 +        // Purpur start - Add boat fall damage config
 +        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
++            // Purpur start - Minecart settings and WASD controls
++            if (getRootVehicle() instanceof AbstractMinecart && level().purpurConfig.minecartControllable && !level().purpurConfig.minecartControllableFallDamage) {
++                return false;
++            }
++            // Purpur end - Minecart settings and WASD controls
 +            if (getRootVehicle() instanceof net.minecraft.world.entity.vehicle.boat.Boat && !level().purpurConfig.boatsDoFallDamage) {
 +                return false;
 +            }
@@ -52,7 +73,7 @@
          Entity entity = source.getEntity();
          if (!( // Paper - split the if statement. If below statement is false, hurtServer would not have been evaluated. Return false.
              !(entity instanceof Player player && !this.canHarmPlayer(player))
-@@ -1529,7 +_,7 @@
+@@ -1529,7 +1560,7 @@
          }
  
          if (newLevel.dimension() == lastDimension) {
@@ -61,7 +82,23 @@
              this.connection.resetPosition();
              transition.postTeleportTransition().onTransition(this);
              return this;
-@@ -1552,6 +_,7 @@
+@@ -1543,6 +1574,15 @@
+         playerList.sendPlayerPermissionLevel(this);
+         this.portalProcess = null; // SPIGOT-7785: there is no need to carry this over as it contains the old world/location and we might run into trouble if there is a portal in the same spot in both worlds
+         oldLevel.removePlayerImmediately(this, Entity.RemovalReason.CHANGED_DIMENSION);
++        // WarpMC start - dead chunk fix: immediately purge old dim's dead holders on dimension switch
++        // Without this, old dim's NewChunkHolder (1972) + ChunkHolder (1972) vs LevelChunk (989) = 2x holders stay as Old gen for 5s (UNLOAD_COOLDOWN), causing 4GB burst and G1 evacuation failure 140ms
++        // We trigger old level's ChunkHolderManager tick to expire UNLOAD_COOLDOWN tickets immediately, freeing PalettedContainer/SWMRNibbleArray
++        try {
++            // Force old level's chunk system to process ticket updates and schedule unloads for dead chunks
++            // Use reflection to avoid hard dependency if Moonrise not present
++            ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel)oldLevel).moonrise$getChunkTaskScheduler().chunkHolderManager.tick();
++        } catch (Exception ignored) {}
++        // WarpMC end
+         this.unsetRemoved();
+         ProfilerFiller profiler = Profiler.get();
+         profiler.push("moving");
+@@ -1552,6 +1592,7 @@
  
          profiler.pop();
          profiler.push("placing");
@@ -69,7 +106,7 @@
          this.setServerLevel(newLevel);
          this.connection.internalTeleport(PositionMoveRotation.of(transition), transition.relatives()); // CraftBukkit - use internal teleport without event
          this.connection.resetPosition();
-@@ -1664,7 +_,7 @@
+@@ -1664,7 +1705,7 @@
                          new AABB(bedCenter.x() - 8.0, bedCenter.y() - 5.0, bedCenter.z() - 8.0, bedCenter.x() + 8.0, bedCenter.y() + 5.0, bedCenter.z() + 8.0),
                          monster -> monster.isPreventingPlayerRest(this.level(), this)
                      );
@@ -78,7 +115,7 @@
                      return Either.left(Player.BedSleepingProblem.NOT_SAFE);
                  }
              }
-@@ -1700,7 +_,17 @@
+@@ -1700,7 +1741,17 @@
                  CriteriaTriggers.SLEPT_IN_BED.trigger(this);
              });
              if (!this.level().canSleepThroughNights()) {
@@ -97,7 +134,7 @@
              }
  
              this.level().updateSleepingPlayerList();
-@@ -1794,6 +_,7 @@
+@@ -1794,6 +1845,7 @@
  
      @Override
      public void openTextEdit(final SignBlockEntity sign, final boolean isFrontText) {
@@ -105,7 +142,7 @@
          this.connection.send(new ClientboundBlockUpdatePacket(this.level(), sign.getBlockPos()));
          this.connection.send(new ClientboundOpenSignEditorPacket(sign.getBlockPos(), isFrontText));
      }
-@@ -2138,6 +_,26 @@
+@@ -2138,6 +2190,26 @@
          this.lastSentExp = -1; // CraftBukkit - Added to reset
      }
  
@@ -132,7 +169,7 @@
      @Override
      public void completeUsingItem() {
          if (!this.useItem.isEmpty() && this.isUsingItem()) {
-@@ -2373,6 +_,20 @@
+@@ -2373,6 +2445,20 @@
          );
      }
  
@@ -153,11 +190,10 @@
      @Override
      public void sendSystemMessage(final Component message) {
          this.sendSystemMessage(message, false);
-@@ -2524,7 +_,67 @@
+@@ -2524,7 +2610,67 @@
  
      public void resetLastActionTime() {
          this.lastActionTime = Util.getMillis();
--    }
 +        this.setAfk(false); // Purpur - AFK API
 +    }
 +
@@ -217,12 +253,12 @@
 +    @Override
 +    public boolean canBeCollidedWith(Entity entity) {
 +        return !this.isAfk() && super.canBeCollidedWith(entity);
-+    }
+     }
 +    // Purpur end - AFK API
  
      public ServerStatsCounter getStats() {
          return this.stats;
-@@ -3149,4 +_,65 @@
+@@ -3149,4 +3295,65 @@
          return (org.bukkit.craftbukkit.entity.CraftPlayer) super.getBukkitEntity();
      }
      // CraftBukkit end

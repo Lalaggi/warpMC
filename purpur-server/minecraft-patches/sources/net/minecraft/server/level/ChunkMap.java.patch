@@ -1,0 +1,11 @@
+--- a/net/minecraft/server/level/ChunkMap.java
++++ b/net/minecraft/server/level/ChunkMap.java
+@@ -1131,7 +1131,7 @@
+     }
+ 
+     public void resendBiomesForChunks(final List<ChunkAccess> chunks) {
+-        Map<ServerPlayer, List<LevelChunk>> chunksForPlayers = new HashMap<>();
++        Map<ServerPlayer, List<LevelChunk>> chunksForPlayers = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
+ 
+         for (ChunkAccess chunkAccess : chunks) {
+             ChunkPos pos = chunkAccess.getPos();

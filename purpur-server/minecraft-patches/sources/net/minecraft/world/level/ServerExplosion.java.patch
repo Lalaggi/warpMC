@@ -1,6 +1,16 @@
 --- a/net/minecraft/world/level/ServerExplosion.java
 +++ b/net/minecraft/world/level/ServerExplosion.java
-@@ -623,6 +_,23 @@
+@@ -48,7 +48,8 @@
+     private final float radius;
+     private final DamageSource damageSource;
+     private final ExplosionDamageCalculator damageCalculator;
+-    private final Map<Player, Vec3> hitPlayers = new HashMap<>();
++    // WarpMC - Lithium: fastutil for per-explosion map to reduce GC
++    private final Map<Player, Vec3> hitPlayers = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
+     // CraftBukkit - add field
+     public boolean wasCanceled = false;
+     public float yield;
+@@ -623,6 +624,23 @@
      }
  
      public int explode() {

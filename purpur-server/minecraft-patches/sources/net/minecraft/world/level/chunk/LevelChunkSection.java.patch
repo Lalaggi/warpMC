@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/chunk/LevelChunkSection.java
 +++ b/net/minecraft/world/level/chunk/LevelChunkSection.java
-@@ -326,9 +_,10 @@
+@@ -326,9 +326,10 @@
          PalettedContainer<Holder<Biome>> newBiomes = this.biomes.recreate();
          int size = 4;
  

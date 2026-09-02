@@ -1,0 +1,16 @@
+--- a/net/minecraft/world/level/chunk/ChunkAccess.java
++++ b/net/minecraft/world/level/chunk/ChunkAccess.java
+@@ -73,9 +73,10 @@
+     protected final @Nullable BlendingData blendingData;
+     public final Map<Heightmap.Types, Heightmap> heightmaps = Maps.newEnumMap(Heightmap.Types.class);
+     // Paper - rewrite chunk system
+-    private final Map<Structure, StructureStart> structureStarts = Maps.newHashMap();
+-    private final Map<Structure, LongSet> structuresRefences = Maps.newHashMap();
+-    protected final Map<BlockPos, CompoundTag> pendingBlockEntities = Maps.newHashMap();
++    // WarpMC - Lithium: fastutil to reduce per-ProtoChunk alloc (was 3 HashMaps per chunk)
++    private final Map<Structure, StructureStart> structureStarts = new Object2ObjectOpenHashMap<>();
++    private final Map<Structure, LongSet> structuresRefences = new Object2ObjectOpenHashMap<>();
++    protected final Map<BlockPos, CompoundTag> pendingBlockEntities = new Object2ObjectOpenHashMap<>();
+     public final Map<BlockPos, BlockEntity> blockEntities = new Object2ObjectOpenHashMap<>();
+     protected final LevelHeightAccessor levelHeightAccessor;
+     protected final LevelChunkSection[] sections;

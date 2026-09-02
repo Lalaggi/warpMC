@@ -1,0 +1,61 @@
+--- a/net/minecraft/world/ticks/LevelTicks.java
++++ b/net/minecraft/world/ticks/LevelTicks.java
+@@ -256,26 +256,46 @@
+     }
+ 
+     public void copyAreaFrom(final LevelTicks<T> source, final BoundingBox area, final Vec3i offset) {
++        // WarpMC - Lithium: avoid Stream alloc in chunk tick hot path
+         List<ScheduledTick<T>> ticksToAdd = new ArrayList<>();
+         Predicate<ScheduledTick<T>> tickInsideBB = t -> area.isInside(t.pos());
+-        source.alreadyRunThisTick.stream().filter(tickInsideBB).forEach(ticksToAdd::add);
+-        source.toRunThisTick.stream().filter(tickInsideBB).forEach(ticksToAdd::add);
+-        source.forContainersInArea(area, (pos, container) -> container.getAll().filter(tickInsideBB).forEach(ticksToAdd::add));
+-        LongSummaryStatistics info = ticksToAdd.stream().mapToLong(ScheduledTick::subTickOrder).summaryStatistics();
+-        long minSubTick = info.getMin();
+-        long maxSubTick = info.getMax();
+-        ticksToAdd.forEach(
+-            tick -> this.schedule(
++        for (ScheduledTick<T> tick : source.alreadyRunThisTick) {
++            if (tickInsideBB.test(tick)) ticksToAdd.add(tick);
++        }
++        for (ScheduledTick<T> tick : source.toRunThisTick) {
++            if (tickInsideBB.test(tick)) ticksToAdd.add(tick);
++        }
++        source.forContainersInArea(area, (pos, container) -> {
++            // container.getAll() is Stream, but we avoid extra stream for filter by iterating via forEach with predicate check
++            container.getAll().forEach(tick -> {
++                if (tickInsideBB.test(tick)) ticksToAdd.add(tick);
++            });
++        });
++        // WarpMC - manual min/max to avoid stream().mapToLong().summaryStatistics()
++        long minSubTick = Long.MAX_VALUE;
++        long maxSubTick = Long.MIN_VALUE;
++        for (ScheduledTick<T> tick : ticksToAdd) {
++            long v = tick.subTickOrder();
++            if (v < minSubTick) minSubTick = v;
++            if (v > maxSubTick) maxSubTick = v;
++        }
++        final long fMin = minSubTick;
++        final long fMax = maxSubTick;
++        for (ScheduledTick<T> tick : ticksToAdd) {
++            this.schedule(
+                 new ScheduledTick<>(
+-                    tick.type(), tick.pos().offset(offset), tick.triggerTick(), tick.priority(), tick.subTickOrder() - minSubTick + maxSubTick + 1L
++                    tick.type(), tick.pos().offset(offset), tick.triggerTick(), tick.priority(), tick.subTickOrder() - fMin + fMax + 1L
+                 )
+-            )
+-        );
++            );
++        }
+     }
+ 
+     @Override
+     public int count() {
+-        return this.allContainers.values().stream().mapToInt(TickAccess::count).sum();
++        // WarpMC - avoid stream alloc per count() (called for stats)
++        int ret = 0;
++        for (LevelChunkTicks<T> c : this.allContainers.values()) ret += c.count();
++        return ret;
+     }
+ 
+     @FunctionalInterface

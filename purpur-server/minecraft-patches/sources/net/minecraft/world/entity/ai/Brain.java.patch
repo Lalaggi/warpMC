@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/ai/Brain.java
 +++ b/net/minecraft/world/entity/ai/Brain.java
-@@ -37,11 +_,11 @@
+@@ -37,14 +37,15 @@
  
  public class Brain<E extends LivingEntity> {
      private static final int SCHEDULE_UPDATE_DELAY = 20;
@@ -11,7 +11,27 @@
      private final Map<Integer, Map<Activity, Set<BehaviorControl<? super E>>>> availableBehaviorsByPriority = Maps.newTreeMap();
      private @Nullable EnvironmentAttribute<Activity> schedule;
 -    private final Map<Activity, Set<Pair<MemoryModuleType<?>, MemoryStatus>>> activityRequirements = Maps.newHashMap();
+-    private final Map<Activity, Set<MemoryModuleType<?>>> activityMemoriesToEraseWhenStopped = Maps.newHashMap();
+-    private Set<Activity> coreActivities = Sets.newHashSet();
+-    private final Set<Activity> activeActivities = Sets.newHashSet();
 +    private final Map<Activity, Set<Pair<MemoryModuleType<?>, MemoryStatus>>> activityRequirements = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
-     private final Map<Activity, Set<MemoryModuleType<?>>> activityMemoriesToEraseWhenStopped = Maps.newHashMap();
-     private Set<Activity> coreActivities = Sets.newHashSet();
-     private final Set<Activity> activeActivities = Sets.newHashSet();
++    // WarpMC - Lithium: fastutil to reduce per-brain alloc (was HashMap/HashSet per LivingEntity)
++    private final Map<Activity, Set<MemoryModuleType<?>>> activityMemoriesToEraseWhenStopped = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
++    private Set<Activity> coreActivities = new it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet<>();
++    private final Set<Activity> activeActivities = new it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet<>();
+     private Activity defaultActivity = Activity.IDLE;
+     private long lastScheduleUpdate = -9999L;
+ 
+@@ -366,9 +367,10 @@
+                 this.registerMemory(requiredMemory);
+             }
+ 
++            // WarpMC - Lithium: fastutil for per-priority map to reduce alloc
+             this.availableBehaviorsByPriority
+-                .computeIfAbsent(pair.getFirst(), key -> Maps.newHashMap())
+-                .computeIfAbsent(activity, key -> Sets.newLinkedHashSet())
++                .computeIfAbsent(pair.getFirst(), key -> new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>())
++                .computeIfAbsent(activity, key -> new it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet<>())
+                 .add(behavior);
+         }
+     }

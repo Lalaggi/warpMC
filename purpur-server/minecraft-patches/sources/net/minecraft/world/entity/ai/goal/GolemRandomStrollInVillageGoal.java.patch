@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/ai/goal/GolemRandomStrollInVillageGoal.java
 +++ b/net/minecraft/world/entity/ai/goal/GolemRandomStrollInVillageGoal.java
-@@ -54,7 +_,8 @@
+@@ -54,7 +54,8 @@
  
      private @Nullable Vec3 getPositionTowardsVillagerWhoWantsGolem() {
          ServerLevel level = (ServerLevel)this.mob.level();

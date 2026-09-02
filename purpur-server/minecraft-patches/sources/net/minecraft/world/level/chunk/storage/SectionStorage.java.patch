@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/chunk/storage/SectionStorage.java
++++ b/net/minecraft/world/level/chunk/storage/SectionStorage.java
+@@ -212,7 +212,7 @@
+     }
+ 
+     private <T> Dynamic<T> writeChunk(final ChunkPos chunkPos, final DynamicOps<T> ops) {
+-        Map<T, T> sections = Maps.newHashMap();
++        Map<T, T> sections = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
+ 
+         for (int sectionY = this.levelHeightAccessor.getMinSectionY(); sectionY <= this.levelHeightAccessor.getMaxSectionY(); sectionY++) {
+             long key = getKey(chunkPos, sectionY);

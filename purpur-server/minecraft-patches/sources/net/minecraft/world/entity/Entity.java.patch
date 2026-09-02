@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -168,6 +_,7 @@
+@@ -168,6 +168,7 @@
      SlotProvider,
      DebugValueSource,
      TypedInstance<EntityType<?>>, ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity, ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity { // Paper - rewrite chunk system // Paper - optimise entity tracker
@@ -8,7 +8,7 @@
      // CraftBukkit start
      private static final int CURRENT_LEVEL = 2;
      static boolean isLevelAtLeast(ValueInput input, int level) {
-@@ -297,8 +_,9 @@
+@@ -297,8 +298,9 @@
      public double xOld;
      public double yOld;
      public double zOld;
@@ -19,7 +19,7 @@
      public int tickCount;
      private int remainingFireTicks;
      private final EntityFluidInteraction fluidInteraction = new EntityFluidInteraction(Set.of(FluidTags.WATER, FluidTags.LAVA));
-@@ -330,8 +_,8 @@
+@@ -330,8 +332,8 @@
      public @Nullable PortalProcessor portalProcess;
      public int portalCooldown;
      private boolean invulnerable;
@@ -30,7 +30,7 @@
      private boolean hasGlowingTag;
      private final Set<String> tags = new io.papermc.paper.util.SizeLimitedSet<>(new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(), MAX_ENTITY_TAG_COUNT); // Paper - fully limit tag size - replace set impl
      private final double[] pistonDeltas = new double[]{0.0, 0.0, 0.0};
-@@ -382,6 +_,7 @@
+@@ -382,6 +384,7 @@
      private final int despawnTime; // Paper - entity despawn time limit
      public int totalEntityAge; // Paper - age-like counter for all entities
      public final io.papermc.paper.entity.activation.ActivationType activationType = io.papermc.paper.entity.activation.ActivationType.activationTypeFor(this); // Paper - EAR 2/tracking ranges
@@ -38,7 +38,7 @@
      // Paper start - EAR 2
      public final boolean defaultActivationState;
      public long activatedTick = Integer.MIN_VALUE;
-@@ -549,10 +_,22 @@
+@@ -549,10 +552,37 @@
      }
      // Paper end - optimise entity tracker
  
@@ -47,6 +47,21 @@
 +        return true;
 +    }
 +    // Purpur end - Add canSaveToDisk to Entity
++
++    // Purpur start - copied from Mob - API for any mob to burn daylight
++    public boolean isSunBurnTick() {
++        if (!this.level().isClientSide() && this.level().environmentAttributes().getValue(EnvironmentAttributes.MONSTERS_BURN, this.position())) {
++            float br = this.getLightLevelDependentMagicValue();
++            BlockPos roundedPos = BlockPos.containing(this.getX(), this.getEyeY(), this.getZ());
++            boolean isInNonBurnableBlock = this.isInWaterOrRain() || this.isInPowderSnow || this.wasInPowderSnow;
++            if (br > 0.5F && this.random.nextFloat() * 30.0F < (br - 0.4F) * 2.0F && !isInNonBurnableBlock && this.level().canSeeSky(roundedPos)) {
++                return true;
++            }
++        }
++
++        return false;
++    }
++    // Purpur end - copied from Mob - API for any mob to burn daylight
 +
      public Entity(final EntityType<?> type, final Level level) {
          this.type = type;
@@ -61,7 +76,7 @@
          this.position = Vec3.ZERO;
          this.blockPosition = BlockPos.ZERO;
          this.chunkPosition = ChunkPos.ZERO;
-@@ -950,6 +_,7 @@
+@@ -950,6 +980,7 @@
              && this.level.paperConfig().environment.netherCeilingVoidDamageHeight.test(v -> this.getY() >= v)
              && (!(this instanceof Player player) || !player.getAbilities().invulnerable))) {
              // Paper end - Configurable nether ceiling damage
@@ -69,7 +84,39 @@
              this.onBelowWorld();
          }
      }
-@@ -2007,7 +_,7 @@
+@@ -1564,8 +1595,9 @@
+ 
+         final AABB currentBox = this.getBoundingBox();
+ 
+-        final List<VoxelShape> potentialCollisionsVoxel = new ArrayList<>();
+-        final List<AABB> potentialCollisionsBB = new ArrayList<>();
++        // WarpMC - Lithium: fastutil to reduce per-entity move alloc
++        final List<VoxelShape> potentialCollisionsVoxel = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
++        final List<AABB> potentialCollisionsBB = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+ 
+         final AABB initialCollisionBox;
+         if (xZero & zZero) {
+@@ -1577,7 +1609,8 @@
+             initialCollisionBox = currentBox.expandTowards(movement);
+         }
+ 
+-        final List<AABB> entityAABBs = new ArrayList<>();
++        // WarpMC - Lithium: fastutil
++        final List<AABB> entityAABBs = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+         ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getEntityHardCollisions(
+             this.level, (Entity)(Object)this, initialCollisionBox, entityAABBs, 0, null
+         );
+@@ -1607,7 +1640,8 @@
+             stepRetrievalBox = stepRetrievalBox.expandTowards(0.0, (double)-1.0E-5F, 0.0);
+         }
+ 
+-        final List<VoxelShape> stepVoxels = new ArrayList<>();
++        // WarpMC - Lithium
++        final List<VoxelShape> stepVoxels = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+         final List<AABB> stepAABBs = entityAABBs;
+ 
+         ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+@@ -2007,7 +2041,7 @@
      }
  
      public boolean fireImmune() {
@@ -78,7 +125,7 @@
      }
  
      public boolean causeFallDamage(final double fallDistance, final float damageModifier, final DamageSource damageSource) {
-@@ -2593,7 +_,7 @@
+@@ -2593,7 +2627,7 @@
                  output.putBoolean("Bukkit.invisible", this.persistentInvisibility);
              }
              // SPIGOT-6907: re-implement LivingEntity#setMaximumAir()
@@ -87,7 +134,7 @@
                  output.putInt("Bukkit.MaxAirSupply", this.getMaxAirSupply());
              }
              output.putInt("Spigot.ticksLived", this.totalEntityAge); // Paper
-@@ -2679,6 +_,11 @@
+@@ -2679,6 +2713,11 @@
                  output.putBoolean("Paper.FreezeLock", true);
              }
              // Paper end
@@ -99,7 +146,7 @@
          } catch (Throwable t) {
              CrashReport report = CrashReport.forThrowable(t, "Saving entity NBT");
              CrashReportCategory category = report.addCategory("Entity being saved");
-@@ -2802,6 +_,9 @@
+@@ -2802,6 +2841,9 @@
              }
              freezeLocked = input.getBooleanOr("Paper.FreezeLock", false);
              // Paper end
@@ -109,7 +156,7 @@
          } catch (Throwable t) {
              CrashReport report = CrashReport.forThrowable(t, "Loading entity NBT");
              CrashReportCategory category = report.addCategory("Entity being loaded");
-@@ -3067,6 +_,7 @@
+@@ -3067,6 +3109,7 @@
              if (this.isAlive() && this instanceof Leashable leashable) {
                  if (leashable.getLeashHolder() == player) {
                      if (!this.level().isClientSide()) {
@@ -117,7 +164,36 @@
                          // Paper start - EntityUnleashEvent
                          if (!org.bukkit.craftbukkit.event.CraftEventFactory.handlePlayerUnleashEntityEvent(
                              leashable, player, hand, !player.hasInfiniteMaterials(), true
-@@ -3500,15 +_,18 @@
+@@ -3375,6 +3418,13 @@
+ 
+             this.passengers = ImmutableList.copyOf(newPassengers);
+         }
++
++        // Purpur start - Ridables
++        if (isRidable() && this.passengers.get(0) == passenger && passenger instanceof Player player) {
++            onMount(player);
++            this.rider = player;
++        }
++        // Purpur end - Ridables
+     }
+ 
+     // Paper start - Force entity dismount during teleportation
+@@ -3415,6 +3465,14 @@
+             return false;
+         }
+         // CraftBukkit end
++
++        // Purpur start - Ridables
++        if (this.rider != null && this.passengers.get(0) == this.rider) {
++            onDismount(this.rider);
++            this.rider = null;
++        }
++        // Purpur end - Ridables
++
+         if (this.passengers.size() == 1 && this.passengers.get(0) == passenger) {
+             this.passengers = ImmutableList.of();
+         } else {
+@@ -3500,15 +3558,18 @@
          return Vec3.directionFromRotation(this.getRotationVector());
      }
  
@@ -137,7 +213,7 @@
              }
          }
      }
-@@ -4238,7 +_,7 @@
+@@ -4238,7 +4299,7 @@
      }
  
      public boolean canUsePortal(final boolean ignorePassenger) {
@@ -146,7 +222,7 @@
      }
  
      public boolean canTeleport(final Level from, final Level to) {
-@@ -4788,6 +_,12 @@
+@@ -4788,6 +4849,12 @@
          return Mth.lerp(partial, this.yRotO, this.yRot);
      }
  
@@ -159,7 +235,7 @@
      public boolean touchingUnloadedChunk() {
          AABB box = this.getBoundingBox().inflate(1.0);
          int x0 = Mth.floor(box.minX);
-@@ -5091,7 +_,7 @@
+@@ -5091,7 +5158,7 @@
      }
  
      public float maxUpStep() {
@@ -168,3 +244,48 @@
      }
  
      public void onExplosionHit(final @Nullable Entity explosionCausedBy) {
+@@ -5385,4 +5452,44 @@
+         return ((ServerLevel) this.level()).isPositionEntityTicking(this.blockPosition());
+     }
+     // Paper end - Expose entity id counter
++    // Purpur start - Ridables
++    @Nullable
++    private Player rider = null;
++
++    @Nullable
++    public Player getRider() {
++        return rider;
++    }
++
++    public boolean isRidable() {
++        return false;
++    }
++
++    public boolean isControllable() {
++        return true;
++    }
++
++    public void onMount(Player rider) {
++        if (this instanceof Mob) {
++            ((Mob) this).setTarget(null, null);
++            ((Mob) this).getNavigation().stop();
++        }
++        rider.setJumping(false); // fixes jump on mount
++    }
++
++    public void onDismount(Player player) {
++    }
++
++    public boolean onSpacebar() {
++        return false;
++    }
++
++    public boolean onClick(InteractionHand hand) {
++        return false;
++    }
++
++    public boolean processClick(InteractionHand hand) {
++        return false;
++    }
++    // Purpur end - Ridables
+ }

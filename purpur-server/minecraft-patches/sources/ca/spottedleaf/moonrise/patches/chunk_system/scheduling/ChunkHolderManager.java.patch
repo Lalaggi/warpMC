@@ -1,0 +1,12 @@
+--- a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
++++ b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
+@@ -70,7 +70,8 @@
+     public static final int ENTITY_TICKING_TICKET_LEVEL = ChunkLevel.ENTITY_TICKING_LEVEL;
+     public static final int MAX_TICKET_LEVEL = ChunkLevel.MAX_LEVEL; // inclusive
+ 
+-    public static final TicketType UNLOAD_COOLDOWN = ChunkSystemTicketType.create("chunk_system:unload_cooldown", null, 5L * 20L);
++    // WarpMC - dead chunk fix: reduce from 5s to 1s to avoid 4GB Old gen burst on dim switch (QueerSMP 140ms -> <40ms)
++    public static final TicketType UNLOAD_COOLDOWN = ChunkSystemTicketType.create("chunk_system:unload_cooldown", null, 1L * 20L);
+ 
+     private static final long NO_TIMEOUT_MARKER = Long.MIN_VALUE;
+     public final ReentrantAreaLock ticketLockArea;

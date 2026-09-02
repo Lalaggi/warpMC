@@ -259,6 +259,11 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
             fakePlayer.setHidden(this.hidden);
             fakePlayer.setResetHealthOnDeath(this.resetHealthOnDeath);
 
+            // WarpMC fix: set position BEFORE placeNewPlayer to avoid initial 0,0,0 chunk ticket.
+            // placeNewPlayer does playerConnection.teleport(player.getX/Y/Z) which would otherwise
+            // create a holder at 0,0 before we teleport to target, leaving a dangling ticket.
+            fakePlayer.snapTo(x, y, z, yaw, pitch);
+
             // Register early so PlayerList patches can query isFake / hidden state
             FakeServerPlayerManager.this.register(fakePlayer);
 
@@ -270,8 +275,14 @@ public class FakeServerPlayerManager implements FakePlayerFactory {
                 throw e;
             }
 
-            // Position — for fake players this moves the chunk loader and resets position
-            fakePlayer.connection.teleport(x, y, z, yaw, pitch);
+            // placeNewPlayer already teleported to the snapTo position; ensure chunk loader is at correct pos
+            // (no second teleport needed — avoids leaving a ticket at 0,0 if snapTo failed)
+            if (fakePlayer.getX() != x || fakePlayer.getY() != y || fakePlayer.getZ() != z) {
+                fakePlayer.connection.teleport(x, y, z, yaw, pitch);
+            } else {
+                // Force chunk loader update to target chunk if teleport was no-op due to same pos
+                try { fakePlayer.level().getChunkSource().move(fakePlayer); } catch (Exception ignored) {}
+            }
 
             // Apply tab-list visibility after join (hidden fakes start unlisted)
             if (this.hidden) {
