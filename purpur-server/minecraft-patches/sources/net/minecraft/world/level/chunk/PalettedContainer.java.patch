@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/chunk/PalettedContainer.java
++++ b/net/minecraft/world/level/chunk/PalettedContainer.java
+@@ -118,7 +_,7 @@
+ 
+             for (T presetValue : presetValues) {
+                 if (this.data.palette.getSize() >= maxSize) {
+-                    java.util.Set<T> allValues = new java.util.HashSet<>(values);
++                    java.util.Set<T> allValues = new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(values);
+                     allValues.addAll(Arrays.asList(presetValues));
+                     int newBits = net.minecraft.util.Mth.ceillog2(allValues.size());
+ 

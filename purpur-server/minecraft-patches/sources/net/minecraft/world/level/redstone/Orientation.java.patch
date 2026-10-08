@@ -1,0 +1,20 @@
+--- a/net/minecraft/world/level/redstone/Orientation.java
++++ b/net/minecraft/world/level/redstone/Orientation.java
+@@ -136,7 +_,7 @@
+             self.withSideBias.put(sideBias, generateContext(new Orientation(self.up, self.front, sideBias), lookup));
+         }
+ 
+-        for (Direction facing : Direction.values()) {
++        for (Direction facing : Direction.ALL) {
+             Direction up = self.up;
+             if (facing == self.up) {
+                 up = self.front.getOpposite();
+@@ -149,7 +_,7 @@
+             self.withFront.put(facing, generateContext(new Orientation(up, facing, self.sideBias), lookup));
+         }
+ 
+-        for (Direction facing : Direction.values()) {
++        for (Direction facing : Direction.ALL) {
+             Direction front = self.front;
+             if (facing == self.front) {
+                 front = self.up.getOpposite();

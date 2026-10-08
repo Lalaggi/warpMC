@@ -1,0 +1,42 @@
+--- a/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
++++ b/net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator.java
+@@ -361,21 +_,19 @@
+         int cellYMin = Mth.floorDiv(minY, noiseSettings.getCellHeight());
+         int cellCountY = Mth.floorDiv(noiseSettings.height(), noiseSettings.getCellHeight());
+         return cellCountY <= 0 ? CompletableFuture.completedFuture(centerChunk) : CompletableFuture.supplyAsync(() -> {
+-            int topSectionIndex = centerChunk.getSectionIndex(cellCountY * noiseSettings.getCellHeight() - 1 + minY);
+-            int bottomSectionIndex = centerChunk.getSectionIndex(minY);
+-            Set<LevelChunkSection> sections = Sets.newHashSet();
++            // WarpMC - noisium: Optimized chunk section locking using direct array access
++            final int startIdx = centerChunk.getSectionIndex(cellCountY * noiseSettings.getCellHeight() - 1 + minY);
++            final int endIdx = centerChunk.getSectionIndex(minY);
++            final LevelChunkSection[] chunkSections = centerChunk.getSections();
+ 
+-            for (int sectionIndex = topSectionIndex; sectionIndex >= bottomSectionIndex; sectionIndex--) {
+-                LevelChunkSection section = centerChunk.getSection(sectionIndex);
+-                section.acquire();
+-                sections.add(section);
++            for (int i = startIdx; i >= endIdx; --i) {
++                chunkSections[i].acquire();
+             }
+-
+             try {
+                 return this.doFill(blender, structureManager, randomState, centerChunk, cellYMin, cellCountY);
+             } finally {
+-                for (LevelChunkSection section : sections) {
+-                    section.release();
++                for (int i = startIdx; i >= endIdx; --i) {
++                    chunkSections[i].release();
+                 }
+             }
+         }, Runnable::run); // Paper - rewrite chunk system
+@@ -443,6 +_,9 @@
+ 
+                                 state = this.debugPreliminarySurfaceLevel(noiseChunk, posX, posY, posZ, state);
+                                 if (state != AIR && !SharedConstants.debugVoidTerrain(centerChunk.getPos())) {
++                                    // WarpMC - noisium: use setBlockState with checkThreading=false to keep counts consistent
++                                    // (fluidCount, tickingBlocks, specialCollidingBlocks) while still bypassing
++                                    // PalettedContainer lock overhead via getAndSetUnchecked inside acquired section.
+                                     section.setBlockState(xInSection, yInSection, zInSection, state, false);
+                                     oceanFloor.update(xInSection, posY, zInSection, state);
+                                     worldSurface.update(xInSection, posY, zInSection, state);

@@ -1,0 +1,20 @@
+--- a/net/minecraft/world/level/chunk/storage/SerializableChunkData.java
++++ b/net/minecraft/world/level/chunk/storage/SerializableChunkData.java
+@@ -712,7 +_,7 @@
+     }
+ 
+     private static Map<Structure, StructureStart> unpackStructureStart(final StructurePieceSerializationContext context, final CompoundTag tag, final long seed) {
+-        Map<Structure, StructureStart> outmap = Maps.newHashMap();
++        Map<Structure, StructureStart> outmap = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
+         Registry<Structure> structuresRegistry = context.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+         CompoundTag startsTag = tag.getCompoundOrEmpty("starts");
+ 
+@@ -739,7 +_,7 @@
+     }
+ 
+     private static Map<Structure, LongSet> unpackStructureReferences(final RegistryAccess registryAccess, final ChunkPos pos, final CompoundTag tag) {
+-        Map<Structure, LongSet> outmap = Maps.newHashMap();
++        Map<Structure, LongSet> outmap = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
+         Registry<Structure> structuresRegistry = registryAccess.lookupOrThrow(Registries.STRUCTURE);
+         CompoundTag referencesTag = tag.getCompoundOrEmpty("References");
+         referencesTag.forEach((key, entry) -> {

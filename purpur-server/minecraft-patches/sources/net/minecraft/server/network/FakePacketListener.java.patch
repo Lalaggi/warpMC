@@ -1,0 +1,58 @@
+--- /dev/null
++++ b/net/minecraft/server/network/FakePacketListener.java
+@@ -1,0 +_,55 @@
++package net.minecraft.server.network;
++
++import net.minecraft.network.Connection;
++import net.minecraft.network.chat.Component;
++import net.minecraft.network.protocol.Packet;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.PositionMoveRotation;
++import net.minecraft.world.entity.Relative;
++import java.util.Set;
++import org.jspecify.annotations.NonNull;
++
++/**
++ * A fake {@link ServerGamePacketListenerImpl} that does nothing on disconnect
++ * and suppresses all incoming packets. Used for server-side-only players.
++ */
++public class FakePacketListener extends ServerGamePacketListenerImpl {
++
++    public FakePacketListener(MinecraftServer server, Connection connection, ServerPlayer player, CommonListenerCookie cookie) {
++        super(server, connection, player, cookie);
++    }
++
++    @Override
++    public void send(@NonNull Packet<?> packet) {
++        // no-op: fake players cannot receive packets
++    }
++
++    @Override
++    public void disconnect(@NonNull Component message) {
++        // no-op: don't kick a fake player due to server-side events
++    }
++
++    @Override
++    public void disconnect(@NonNull Component message, org.bukkit.event.player.PlayerKickEvent.Cause cause) {
++        // no-op: also suppress cause-aware disconnect
++    }
++
++    @Override
++    public void tick() {
++        // Minimal tick: just update base fields, don't run vanilla idle/floating kicks.
++        // ServerPlayer.tick() already handles game logic; this only needs to avoid disconnect.
++        // Call the parent's ancillary tick without kick checks — for now no-op besides
++        // keeping the player's connection alive.
++    }
++
++    @Override
++    public void teleport(final PositionMoveRotation destination, final Set<Relative> relatives) {
++        super.teleport(destination, relatives);
++
++        if (this.player.level().getPlayerByUUID(this.player.getUUID()) != null) {
++            this.resetPosition();
++            this.player.level().getChunkSource().move(this.player);
++        }
++    }
++}

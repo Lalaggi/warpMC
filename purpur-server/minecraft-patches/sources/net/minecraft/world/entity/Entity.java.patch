@@ -70,6 +70,38 @@
              this.onBelowWorld();
          }
      }
+@@ -1626,8 +_,9 @@
+ 
+         final AABB currentBox = this.getBoundingBox();
+ 
+-        final List<VoxelShape> potentialCollisionsVoxel = new ArrayList<>();
+-        final List<AABB> potentialCollisionsBB = new ArrayList<>();
++        // WarpMC - Lithium: fastutil to reduce per-entity move alloc
++        final List<VoxelShape> potentialCollisionsVoxel = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
++        final List<AABB> potentialCollisionsBB = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+ 
+         final AABB initialCollisionBox;
+         if (xZero & zZero) {
+@@ -1639,7 +_,8 @@
+             initialCollisionBox = currentBox.expandTowards(movement);
+         }
+ 
+-        final List<AABB> entityAABBs = new ArrayList<>();
++        // WarpMC - Lithium: fastutil
++        final List<AABB> entityAABBs = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+         ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getEntityHardCollisions(
+             this.level, (Entity)(Object)this, initialCollisionBox, entityAABBs, 0, null
+         );
+@@ -1669,7 +_,8 @@
+             stepRetrievalBox = stepRetrievalBox.expandTowards(0.0, (double)-1.0E-5F, 0.0);
+         }
+ 
+-        final List<VoxelShape> stepVoxels = new ArrayList<>();
++        // WarpMC - Lithium
++        final List<VoxelShape> stepVoxels = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+         final List<AABB> stepAABBs = entityAABBs;
+ 
+         ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getCollisionsForBlocksOrWorldBorder(
 @@ -2092,7 +_,7 @@
      }
  

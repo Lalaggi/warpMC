@@ -70,6 +70,17 @@
                      }
  
                      float totalDamage = baseDamage + magicBoost;
+@@ -1227,7 +_,9 @@
+             // Paper end - Configurable sprint interruption on attack
+         }
+ 
+-        if (entity instanceof ServerPlayer serverPlayer && entity.hurtMarked) {
++        // WarpMC start - FakeServerPlayer: skip hurt velocity event for fake players
++        if (entity instanceof ServerPlayer serverPlayer && entity.hurtMarked && !(entity instanceof net.minecraft.server.level.FakeServerPlayer)) {
++        // WarpMC end
+             // CraftBukkit start - Add Velocity Event
+             boolean cancelled = false;
+             org.bukkit.entity.Player player = (org.bukkit.entity.Player) entity.getBukkitEntity();
 @@ -1763,7 +_,23 @@
  
      @Override

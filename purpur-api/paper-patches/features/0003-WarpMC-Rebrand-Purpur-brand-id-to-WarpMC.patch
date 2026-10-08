@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: WarpMC Team <warpmc@local>
+Date: Thu, 8 Oct 2026 17:34:58 +0100
+Subject: [PATCH] WarpMC: Rebrand Purpur brand id to WarpMC
+
+
+diff --git a/src/main/java/io/papermc/paper/ServerBuildInfo.java b/src/main/java/io/papermc/paper/ServerBuildInfo.java
+index fb1fe2651e53a9bf46b3632c638e13eea9dcda93..7fa446d4cd656a490f9fc9fb6edff43992f23ed1 100644
+--- a/src/main/java/io/papermc/paper/ServerBuildInfo.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfo.java
+@@ -21,9 +21,9 @@ public interface ServerBuildInfo {
+ 
+     // Purpur start
+     /**
+-     * The brand id for Purpur.
++     * The brand id for WarpMC — Yet another PaperMC Fork.
+      */
+-    Key BRAND_PURPUR_ID = Key.key("purpurmc", "purpur");
++    Key BRAND_WARPMC_ID = Key.key("warpmc", "warpmc");
+     // Purpur end
+     /**
+      * Gets the {@code ServerBuildInfo}.

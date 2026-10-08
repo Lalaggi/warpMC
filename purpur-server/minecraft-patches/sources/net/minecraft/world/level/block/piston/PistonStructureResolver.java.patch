@@ -27,3 +27,12 @@
                  return false;
              }
  
+@@ -175,7 +_,7 @@
+     private boolean addBranchingBlocks(final BlockPos fromPos) {
+         BlockState fromState = this.level.getBlockState(fromPos);
+ 
+-        for (Direction direction : Direction.values()) {
++        for (Direction direction : Direction.ALL) {
+             if (direction.getAxis() != this.pushDirection.getAxis()) {
+                 BlockPos neighbourPos = fromPos.relative(direction);
+                 BlockState neighbourState = this.level.getBlockState(neighbourPos);

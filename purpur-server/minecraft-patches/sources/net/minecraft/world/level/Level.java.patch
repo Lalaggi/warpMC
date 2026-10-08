@@ -1,12 +1,22 @@
 --- a/net/minecraft/world/level/Level.java
 +++ b/net/minecraft/world/level/Level.java
+@@ -128,6 +_,8 @@
+     private int skyDarken;
+     protected int randValue = RandomSource.createThreadLocalInstance().nextInt();
+     protected final int addend = 1013904223;
++    // WarpMC - Lithium: cache BlockPos for random pos to avoid alloc per chunk tick
++    private final BlockPos.MutableBlockPos randomPosInChunkCachedPos = new BlockPos.MutableBlockPos();
+     protected float oRainLevel;
+     public float rainLevel;
+     protected float oThunderLevel;
 @@ -172,10 +_,54 @@
      }
      // Paper end - add paper world config
  
 +    public final org.purpurmc.purpur.PurpurWorldConfig purpurConfig; // Purpur - Purpur config files
      public static @Nullable BlockPos lastPhysicsProblem; // Spigot
-     public final Map<ServerExplosion.CacheKey, Float> explosionDensityCache = new java.util.HashMap<>(); // Paper - Optimize explosions
+-    public final Map<ServerExplosion.CacheKey, Float> explosionDensityCache = new java.util.HashMap<>(); // Paper - Optimize explosions
++    public final Map<ServerExplosion.CacheKey, Float> explosionDensityCache = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>(); // Paper - Optimize explosions
      public java.util.ArrayDeque<net.minecraft.world.level.block.RedstoneTorchBlock.Toggle> redstoneUpdateInfos; // Paper - Faster redstone torch rapid clock removal; Move from Map in BlockRedstoneTorch to here
  
 +    // Purpur start - Add adjustable breeding cooldown to config
@@ -64,6 +74,19 @@
          this.generator = generator;
          this.world = new CraftWorld((ServerLevel) this, worldKey, biomeProvider, environment);
  
+@@ -2114,9 +_,11 @@
+     public abstract RecipeAccess recipeAccess();
+ 
+     public BlockPos getBlockRandomPos(final int xo, final int yo, final int zo, final int yMask) {
++        // WarpMC - Lithium: inline LCG + reuse MutableBlockPos to avoid new BlockPos per random tick (was 3k allocs/tick)
+         this.randValue = this.randValue * 3 + 1013904223;
+         int val = this.randValue >> 2;
+-        return new BlockPos(xo + (val & 15), yo + (val >> 16 & yMask), zo + (val >> 8 & 15));
++        this.randomPosInChunkCachedPos.set(xo + (val & 15), yo + (val >> 16 & yMask), zo + (val >> 8 & 15));
++        return this.randomPosInChunkCachedPos.immutable();
+     }
+ 
+     public boolean noSave() {
 @@ -2202,4 +_,14 @@
          return this.moonrise$getEntityLookup().getEntityCount(); // Paper - rewrite chunk system
      }

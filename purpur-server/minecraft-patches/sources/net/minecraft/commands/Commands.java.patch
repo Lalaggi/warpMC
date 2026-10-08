@@ -29,6 +29,18 @@
          }
  
          if (commandSelection.includeIntegrated) {
+@@ -477,6 +_,11 @@
+     }
+ 
+     public void sendCommands(final ServerPlayer player) {
++        // WarpMC start - FakeServerPlayer: don't build/send command tree to fake clients (no network, leaks StringRange)
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer) {
++            return;
++        }
++        // WarpMC end
+         // Paper start - Send empty commands if tab completion is disabled
+         if (org.spigotmc.SpigotConfig.tabComplete < 0) {
+             player.connection.send(new ClientboundCommandsPacket(new RootCommandNode<>(), COMMAND_NODE_INSPECTOR));
 @@ -523,6 +_,7 @@
      private void runSync(ServerPlayer player, java.util.Collection<String> bukkit, RootCommandNode<CommandSourceStack> root) {
          // Paper end - Perf: Async command map building

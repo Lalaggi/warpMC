@@ -1,0 +1,196 @@
+# Build WarpMC 100% LOCALLY — ZERO GitLab/GitHub cloud minutes
+#
+# Runner: "local-podman-warpMC" (privileged, podman executor, tags: warpmc)
+#   host = unix:///run/user/1000/podman/podman.sock
+#   executor docker, image eclipse-temurin:25-jdk, privileged=true
+# Project settings enforced (2026-08-22):
+#   shared_runners_enabled = false
+#   group_runners_enabled  = false
+# Result: GitLab SaaS shared runners will NEVER pick these jobs.
+#         Only the local podman runner with tag `warpmc` can run them.
+#         Cost = 0 (your own machine, podman). GitHub Actions is manual-only.
+#
+# Release assets: jars uploaded to GitLab Generic Package Registry via CI_JOB_TOKEN,
+# then linked individually in the release (no zip download).
+#
+# Triggers on every push to warp/* or main, plus web/manual. Artifacts kept 1 week.
+
+stages:
+  - build
+  - verify
+  - release
+
+workflow:
+  rules:
+    # Never run a pipeline for tags created by the release job (prevents duplicate build on alpha-* tags)
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
+      when: always
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+    - changes:
+        - "purpur-api/**/*"
+        - "purpur-server/**/*"
+        - "paper-api/**/*"
+        - "paper-server/**/*"
+        - "patches/**/*"
+        - "build-data/**/*"
+        - "build.gradle.kts"
+        - "settings.gradle.kts"
+        - "gradle.properties"
+        - ".gitlab-ci.yml"
+      when: always
+    - when: never
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.configuration-cache=false"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle-home"
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0  # Full clone so paperweight 3-way merge has base blobs (fixes "lacks necessary blobs" on feature patches after WarpMC changes)
+  RELEASE_VERSION: "alpha-$CI_COMMIT_SHORT_SHA"
+
+build:
+  stage: build
+  image: eclipse-temurin:25-jdk
+  tags:
+    - warpmc
+  cache:
+    key: "${CI_PROJECT_PATH}-gradle"
+    paths:
+      - .gradle-home/caches/
+      - .gradle-home/wrapper/
+      - .gradle-home/notifications/
+    policy: pull-push
+  before_script:
+    - java -version
+    - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates curl 2>&1 | tail -n 5
+    - git config --global user.email "ci@warpmc.local"
+    - git config --global user.name "WarpMC CI"
+    - chmod +x ./gradlew
+    - mkdir -p "$GRADLE_USER_HOME"
+    # Paperweight caches vanilla decompiled jar + ATs; when patches change the cached decompile is stale and causes "invalid object" / "lacks necessary blobs" on feature patches (seen on 7597878c Ridables). Purge paperweight cache so applyAllPatches re-decompiles from current patches.
+    - rm -rf .gradle-home/caches/paperweight purpur-server/.gradle/caches/paperweight .gradle/caches/paperweight || true
+    # Also ensure no leftover build/src state from previous pipeline's cache
+    - ./gradlew clean --stacktrace || true
+  script:
+    - ./gradlew applyAllPatches --stacktrace
+    - ./gradlew build --stacktrace
+    - ./gradlew :purpur-server:createBundlerJar :purpur-server:createPaperclipJar --stacktrace
+    - ls -lh purpur-server/build/libs/purpur-*.jar
+    - ls -lh purpur-api/build/libs/purpur-*.jar
+    - sha256sum purpur-server/build/libs/purpur-*.jar
+    # Create user-friendly jar name: `java -jar warpmc.jar` (copy of bundler, the primary runnable)
+    - cp purpur-server/build/libs/purpur-bundler-*.jar warpmc.jar
+    - cp purpur-server/build/libs/purpur-bundler-*.jar purpur-server/build/libs/warpmc-bundler.jar || true
+    - ls -lh warpmc.jar purpur-server/build/libs/warpmc-bundler.jar
+    - sha256sum warpmc.jar
+    # Upload jars to GitLab Generic Package Registry (CI_JOB_TOKEN has write_package)
+    - ./ci/upload-packages.sh
+  artifacts:
+    name: "warpmc-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - purpur-server/build/libs/purpur-*.jar
+      - purpur-server/build/libs/warpmc-bundler.jar
+      - purpur-api/build/libs/purpur-api-*.jar
+      - warpmc.jar
+      - build/reports/
+    expire_in: 1 week
+  interruptible: true
+  timeout: 1h
+
+verify-patches:
+  stage: verify
+  image: eclipse-temurin:25-jdk
+  tags:
+    - warpmc
+  needs:
+    - job: build
+      optional: true
+  before_script:
+    - java -version
+    - apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates > /dev/null
+    - git config --global user.email "ci@warpmc.local"
+    - git config --global user.name "WarpMC CI"
+    - chmod +x ./gradlew
+    - rm -rf .gradle-home/caches/paperweight purpur-server/.gradle/caches/paperweight .gradle/caches/paperweight || true
+    - ./gradlew clean --stacktrace || true
+  script:
+    - ./gradlew applyAllPatches --stacktrace
+    - echo "Patches applied successfully"
+  interruptible: true
+  timeout: 30m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: always
+    - when: manual
+      allow_failure: true
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  tags:
+    - warpmc
+  needs:
+    - job: build
+      artifacts: false
+  before_script:
+    - echo "Creating release $RELEASE_VERSION"
+  script:
+    - echo "Release $RELEASE_VERSION ready"
+  release:
+    tag_name: "alpha-$CI_COMMIT_SHORT_SHA"
+    name: "Alpha $CI_COMMIT_SHORT_SHA ($CI_COMMIT_REF_NAME)"
+    description: |
+      Automated alpha build from commit $CI_COMMIT_SHA
+      Branch: $CI_COMMIT_REF_NAME
+      Pipeline: $CI_PIPELINE_ID ($CI_PIPELINE_URL)
+
+      ### 🚀 Run the server
+      ```bash
+      java -jar warpmc.jar
+      # or
+      java -jar purpur-bundler.jar
+      ```
+
+      **Primary runnable (use this one):**
+      - **warpmc.jar** / **purpur-bundler.jar** — Mojang bundler, runnable server (~95 MB) — `java -jar warpmc.jar`
+
+      **Alternatives:**
+      - purpur-paperclip.jar — Paperclip runnable alternative (~54 MB)
+      - purpur-server.jar / purpur-api.jar — raw libs (not runnable alone)
+
+      Built 100% locally (podman, zero cloud minutes).
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "warpmc.jar — runnable server (java -jar warpmc.jar) — RECOMMENDED"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/warpmc.jar"
+          link_type: "package"
+          direct_asset_path: "/warpmc.jar"
+        - name: "purpur-bundler.jar — runnable server (same as warpmc.jar)"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-bundler.jar"
+          link_type: "package"
+          direct_asset_path: "/purpur-bundler.jar"
+        - name: "purpur-paperclip.jar — alternative runnable"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-paperclip.jar"
+          link_type: "package"
+          direct_asset_path: "/purpur-paperclip.jar"
+        - name: "purpur-api.jar"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-api.jar"
+          link_type: "package"
+          direct_asset_path: "/purpur-api.jar"
+        - name: "purpur-server.jar — raw (not runnable)"
+          url: "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/warpMC/$RELEASE_VERSION/purpur-server.jar"
+          link_type: "package"
+          direct_asset_path: "/purpur-server.jar"
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^warp\/.*/
+      when: on_success
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+    - when: never
+  interruptible: false
+  timeout: 10m

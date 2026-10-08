@@ -1,5 +1,71 @@
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
+@@ -151,12 +_,16 @@
+         this.ops = new ServerOpList(OPLIST_FILE, notificationService);
+         this.bans = new UserBanList(USERBANLIST_FILE, notificationService);
+         this.ipBans = new IpBanList(IPBANLIST_FILE, notificationService);
++        // WarpMC start - FakeServerPlayer: register factory
++        org.purpurmc.purpur.Purpur.setFakePlayerFactory(org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance());
++        // WarpMC end - FakeServerPlayer
+     }
+ 
+     abstract public void loadAndSaveFiles(); // Paper - fix converting txt to json file; moved from DedicatedPlayerList constructor
+ 
+     public void placeNewPlayer(final Connection connection, final ServerPlayer player, final CommonListenerCookie cookie) {
+-        player.isRealPlayer = true; // Paper
++        final boolean isFake = player instanceof net.minecraft.server.level.FakeServerPlayer; // WarpMC - FakeServerPlayer
++        player.isRealPlayer = !isFake; // Paper // WarpMC - fake players are not real
+         player.loginTime = System.currentTimeMillis(); // Paper - Replace OfflinePlayer#getLastPlayed
+         NameAndId gameProfile = player.nameAndId();
+         UserNameToIdResolver profileCache = this.server.services().nameToIdCache();
+@@ -167,10 +_,17 @@
+         ServerLevel level = player.level();
+         String address = connection.getLoggableAddress(this.server.logIPs());
+         LevelData levelData = level.getLevelData();
+-        ServerGamePacketListenerImpl playerConnection = new ServerGamePacketListenerImpl(this.server, connection, player, cookie);
+-        connection.setupInboundProtocol(
+-            GameProtocols.SERVERBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(this.server.registryAccess()), playerConnection), playerConnection
+-        );
++        // WarpMC start - FakeServerPlayer: use FakePacketListener for fake players
++        final ServerGamePacketListenerImpl playerConnection;
++        if (isFake) {
++            playerConnection = new net.minecraft.server.network.FakePacketListener(this.server, connection, player, cookie);
++        } else {
++            playerConnection = new ServerGamePacketListenerImpl(this.server, connection, player, cookie);
++            connection.setupInboundProtocol(
++                GameProtocols.SERVERBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(this.server.registryAccess()), playerConnection), playerConnection
++            );
++        }
++        // WarpMC end - FakeServerPlayer
+         playerConnection.suspendFlushing();
+         GameRules gameRules = level.getGameRules();
+         boolean immediateRespawn = gameRules.get(GameRules.IMMEDIATE_RESPAWN);
+@@ -240,6 +_,11 @@
+         player.containerMenu.transferTo(player.containerMenu, bukkitPlayer);
+ 
+         org.bukkit.event.player.PlayerJoinEvent playerJoinEvent = new org.bukkit.event.player.PlayerJoinEvent(bukkitPlayer, io.papermc.paper.adventure.PaperAdventure.asAdventure(component)); // Paper - Adventure
++        // WarpMC start - FakeServerPlayer: respect hidden flag for join message
++        if (isFake && ((net.minecraft.server.level.FakeServerPlayer) player).isHidden()) {
++            playerJoinEvent.setJoinMessage(null);
++        }
++        // WarpMC end
+         this.cserver.getPluginManager().callEvent(playerJoinEvent);
+ 
+         if (!player.connection.isAcceptingMessages()) {
+@@ -249,8 +_,11 @@
+         final net.kyori.adventure.text.Component jm = playerJoinEvent.joinMessage();
+ 
+         if (jm != null && !jm.equals(net.kyori.adventure.text.Component.empty())) { // Paper - Adventure
+-            joinMessage = io.papermc.paper.adventure.PaperAdventure.asVanilla(jm); // Paper - Adventure
+-            this.server.getPlayerList().broadcastSystemMessage(joinMessage, false); // Paper - Adventure
++            boolean isHiddenFake = isFake && ((net.minecraft.server.level.FakeServerPlayer) player).isHidden();
++            if (!isHiddenFake) {
++                joinMessage = io.papermc.paper.adventure.PaperAdventure.asVanilla(jm); // Paper - Adventure
++                this.server.getPlayerList().broadcastSystemMessage(joinMessage, false); // Paper - Adventure
++            }
+         }
+         // CraftBukkit end
+ 
 @@ -313,6 +_,7 @@
              scoreboard.addPlayerToTeam(player.getScoreboardName(), collideRuleTeam);
          }
@@ -8,6 +74,18 @@
          // CraftBukkit start - moved down
          LOGGER.info(
              "{}[{}] logged in with entity id {} at ([{}]{}, {}, {})", // Paper - add world identifier
+@@ -413,6 +_,11 @@
+     }
+ 
+     protected void save(final ServerPlayer player) {
++        // WarpMC start - FakeServerPlayer: don't overwrite real playerdata with fake's data (same UUID)
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer) {
++            return;
++        }
++        // WarpMC end
+         if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
+         player.lastSave = MinecraftServer.currentTick; // Paper - Incremental chunk and player saving
+         this.playerIo.save(player);
 @@ -433,6 +_,7 @@
      }
      public net.kyori.adventure.text.@Nullable Component remove(final ServerPlayer player, final net.kyori.adventure.text.Component leaveMessage) {
@@ -16,6 +94,78 @@
          ServerLevel level = player.level();
          player.awardStat(Stats.LEAVE_GAME);
          // CraftBukkit start - Quitting must be before we do final save of data, in case plugins need to modify it
+@@ -442,6 +_,11 @@
+         }
+ 
+         org.bukkit.event.player.PlayerQuitEvent playerQuitEvent = new org.bukkit.event.player.PlayerQuitEvent(player.getBukkitEntity(), leaveMessage, player.quitReason); // Paper - Adventure & Add API for quit reason
++        // WarpMC start - FakeServerPlayer: respect hidden flag for quit message
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer fakeQuit && fakeQuit.isHidden()) {
++            playerQuitEvent.setQuitMessage(null);
++        }
++        // WarpMC end
+         this.cserver.getPluginManager().callEvent(playerQuitEvent);
+         player.getBukkitEntity().disconnect();
+ 
+@@ -465,6 +_,17 @@
+         }
+         // Paper end - Drop carried item when player has disconnected
+         this.save(player);
++        // WarpMC start - FakeServerPlayer: ensure chunk tickets are released for fakes (mirror addPlayer gate)
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer) {
++            try {
++                ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) level)
++                    .moonrise$getPlayerChunkLoader().removePlayer(player);
++            } catch (Exception ignored) {}
++            try {
++                ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) player.level())
++                    .moonrise$getPlayerChunkLoader().removePlayer(player);
++            } catch (Exception ignored2) {}
++        }
+         if (player.isPassenger()) {
+             Entity vehicle = player.getRootVehicle();
+             if (vehicle.hasExactlyOnePlayerPassenger()) {
+@@ -603,9 +_,40 @@
+         // Paper end - respawn event
+         this.players.remove(serverPlayer);
+         this.playersByName.remove(serverPlayer.getScoreboardName().toLowerCase(java.util.Locale.ROOT)); // Paper
++        // WarpMC start - FakeServerPlayer: ensure old fake's chunk loader tickets are released before respawn
++        if (serverPlayer instanceof net.minecraft.server.level.FakeServerPlayer) {
++            try {
++                ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) serverPlayer.level())
++                    .moonrise$getPlayerChunkLoader().removePlayer(serverPlayer);
++            } catch (Exception ignored) {}
++            if (serverPlayer.level() != respawnInfo.newLevel()) {
++                try {
++                    ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) respawnInfo.newLevel())
++                        .moonrise$getPlayerChunkLoader().removePlayer(serverPlayer);
++                } catch (Exception ignored2) {}
++            }
++        }
+         serverPlayer.level().removePlayerImmediately(serverPlayer, removalReason);
+         ServerLevel level = respawnInfo.newLevel();
+-        ServerPlayer player = serverPlayer; // Paper - TODO - recreate instance
++        // WarpMC start - FakeServerPlayer: preserve fake player type on respawn
++        ServerPlayer player;
++        if (serverPlayer instanceof net.minecraft.server.level.FakeServerPlayer fake) {
++            net.minecraft.server.level.ServerLevel respawnLevel = respawnInfo.newLevel();
++            player = new net.minecraft.server.level.FakeServerPlayer(
++                this.server, respawnLevel, serverPlayer.getGameProfile(),
++                serverPlayer.clientInformation(), fake.getOwnerUuid()
++            );
++            ((net.minecraft.server.level.FakeServerPlayer) player).setTimeoutMinutes(fake.getTimeoutMinutes());
++            ((net.minecraft.server.level.FakeServerPlayer) player).setReason(fake.getReason());
++            ((net.minecraft.server.level.FakeServerPlayer) player).setDamageDisabled(fake.isDamageDisabled());
++            ((net.minecraft.server.level.FakeServerPlayer) player).setHidden(fake.isHidden());
++            ((net.minecraft.server.level.FakeServerPlayer) player).setResetHealthOnDeath(fake.isResetHealthOnDeath());
++            org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().unregister(serverPlayer.getUUID());
++            org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().register((net.minecraft.server.level.FakeServerPlayer) player);
++        } else {
++            player = serverPlayer; // Paper - TODO - recreate instance
++        }
++        // WarpMC end - FakeServerPlayer
+         player.connection = serverPlayer.connection;
+         player.restoreFrom(serverPlayer, keepAllPlayerData);
+         player.setId(serverPlayer.getId());
 @@ -769,6 +_,20 @@
          }
      }

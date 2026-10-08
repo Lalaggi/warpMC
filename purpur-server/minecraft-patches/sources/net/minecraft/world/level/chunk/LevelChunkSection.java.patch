@@ -1,0 +1,16 @@
+--- a/net/minecraft/world/level/chunk/LevelChunkSection.java
++++ b/net/minecraft/world/level/chunk/LevelChunkSection.java
+@@ -323,9 +_,10 @@
+         PalettedContainer<Holder<Biome>> newBiomes = this.biomes.recreate();
+         int size = 4;
+ 
+-        for (int x = 0; x < 4; x++) {
+-            for (int y = 0; y < 4; y++) {
+-                for (int z = 0; z < 4; z++) {
++        // WarpMC - noisium: Y-Z-X loop order for cache-friendly axis traversal
++        for (int y = 0; y < 4; y++) {
++            for (int z = 0; z < 4; z++) {
++                for (int x = 0; x < 4; x++) {
+                     newBiomes.getAndSetUnchecked(x, y, z, biomeResolver.getNoiseBiome(quartMinX + x, quartMinY + y, quartMinZ + z, sampler));
+                 }
+             }

@@ -60,3 +60,9 @@ manifest.mf
 /paper-api
 *.jar
 test-plugin.settings.gradle.kts
+
+# WarpMC AFK plugin (standalone repo, gitignored from main)
+warp-afk/
+unplugged-afk/
+afk-plugin/
+extra/

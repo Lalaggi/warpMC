@@ -1,0 +1,11 @@
+--- a/net/minecraft/core/Direction.java
++++ b/net/minecraft/core/Direction.java
+@@ -57,6 +_,8 @@
+     private final Vec3 normalVec3;
+     private final Vector3fc normalVec3f;
+     private static final Direction[] VALUES = values();
++    // WarpMC - cache to avoid defensive copy per redstone tick (Direction.values() clones array)
++    public static final Direction[] ALL = VALUES;
+     private static final Direction[] BY_3D_DATA = Arrays.stream(VALUES).sorted(Comparator.comparingInt(d -> d.data3d)).toArray(Direction[]::new);
+     private static final Direction[] BY_2D_DATA = Arrays.stream(VALUES)
+         .filter(d -> d.getAxis().isHorizontal())

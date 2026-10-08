@@ -1,0 +1,13 @@
+--- a/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
++++ b/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
+@@ -142,7 +_,9 @@
+                                 break;
+                             }
+ 
+-                            if (!(entity instanceof ServerPlayer)) {
++                            // WarpMC start - FakeServerPlayer: allow fake players to be bounced by slime blocks
++                            if (!(entity instanceof ServerPlayer) || entity instanceof net.minecraft.server.level.FakeServerPlayer) {
++                            // WarpMC end
+                                 Vec3 deltaMovement = entity.getDeltaMovement();
+                                 double dx = deltaMovement.x;
+                                 double dy = deltaMovement.y;

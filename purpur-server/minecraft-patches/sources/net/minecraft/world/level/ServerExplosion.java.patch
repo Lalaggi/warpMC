@@ -1,5 +1,15 @@
 --- a/net/minecraft/world/level/ServerExplosion.java
 +++ b/net/minecraft/world/level/ServerExplosion.java
+@@ -48,7 +_,8 @@
+     private final float radius;
+     private final DamageSource damageSource;
+     private final ExplosionDamageCalculator damageCalculator;
+-    private final Map<Player, Vec3> hitPlayers = new HashMap<>();
++    // WarpMC - Lithium: fastutil for per-explosion map to reduce GC
++    private final Map<Player, Vec3> hitPlayers = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
+     // CraftBukkit - add field
+     public boolean wasCanceled = false;
+     public float yield;
 @@ -631,6 +_,23 @@
          this.directMappedBlockCache = new ca.spottedleaf.moonrise.patches.collisions.ExplosionBlockCache[BLOCK_EXPLOSION_CACHE_WIDTH * BLOCK_EXPLOSION_CACHE_WIDTH * BLOCK_EXPLOSION_CACHE_WIDTH];
          this.mutablePos = new BlockPos.MutableBlockPos();

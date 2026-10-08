@@ -1,0 +1,22 @@
+--- a/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
++++ b/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+@@ -186,7 +_,8 @@
+ 
+     public void addPlayer(final ServerPlayer player) {
+         TickThread.ensureTickThread(player, "Cannot add player to player chunk loader async");
+-        if (!((ChunkSystemServerPlayer)player).moonrise$isRealPlayer()) {
++        // WarpMC start - FakeServerPlayer: allow fakes to have chunk loaders (for AFK farm ticking + map visibility)
++        if (!((ChunkSystemServerPlayer)player).moonrise$isRealPlayer() && !(player instanceof net.minecraft.server.level.FakeServerPlayer)) {
+             return;
+         }
+ 
+@@ -211,7 +_,8 @@
+ 
+     public void removePlayer(final ServerPlayer player) {
+         TickThread.ensureTickThread(player, "Cannot remove player from player chunk loader async");
+-        if (!((ChunkSystemServerPlayer)player).moonrise$isRealPlayer()) {
++        // WarpMC start - FakeServerPlayer: allow fakes (see addPlayer)
++        if (!((ChunkSystemServerPlayer)player).moonrise$isRealPlayer() && !(player instanceof net.minecraft.server.level.FakeServerPlayer)) {
+             return;
+         }
+ 

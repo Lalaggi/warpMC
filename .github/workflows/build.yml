@@ -1,10 +1,14 @@
 name: Build
+# COST CONTROL: GitHub Actions runs on cloud minutes ($). To avoid any cloud cost,
+# this workflow is manual-only. All CI is on GitLab local podman runners (zero cloud cost).
+# If you must run on GitHub, trigger manually via Actions tab > Build > Run workflow.
+# Previous auto triggers (push/pull_request on ver/** warp/**) were removed 2026-08-22.
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - "ver/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -24,6 +28,17 @@ jobs:
         run: ./gradlew applyAllPatches --stacktrace
       - name: Build
         run: ./gradlew build --stacktrace
+      - name: Build Bundler Jar
+        run: ./gradlew :purpur-server:createBundlerJar --stacktrace && ls -lh purpur-server/build/libs/*.jar
+      - name: Upload Jars
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: warpmc-${{ github.sha }}
+          path: |
+            purpur-server/build/libs/*.jar
+            purpur-api/build/libs/*.jar
+          retention-days: 7
       - name: Rebuild on Failure
         if: ${{ failure() }}
         run: |

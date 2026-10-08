@@ -1,0 +1,47 @@
+--- /dev/null
++++ b/net/minecraft/server/network/FakeConnection.java
+@@ -1,0 +_,44 @@
++package net.minecraft.server.network;
++
++import io.netty.channel.embedded.EmbeddedChannel;
++import java.net.InetSocketAddress;
++import java.net.SocketAddress;
++import javax.annotation.Nullable;
++import net.minecraft.network.Connection;
++import net.minecraft.network.PacketListener;
++import net.minecraft.network.protocol.PacketFlow;
++import org.jspecify.annotations.NonNull;
++
++/**
++ * A fake {@link Connection} that does nothing — no real network socket,
++ * no packet sending, no disconnect handling. Used for server-side-only players.
++ */
++public class FakeConnection extends Connection {
++
++    private static final SocketAddress FAKE_ADDRESS = new InetSocketAddress("127.0.0.1", 65535);
++
++    public FakeConnection() {
++        super(PacketFlow.SERVERBOUND);
++        this.channel = new EmbeddedChannel();
++    }
++
++    @Override
++    public void setReadOnly() {
++        // no-op
++    }
++
++    @Override
++    public void handleDisconnection() {
++        // no-op
++    }
++
++    @Override
++    public void tick() {
++        // no-op
++    }
++
++    @Override
++    public @NonNull SocketAddress getRemoteAddress() {
++        return FAKE_ADDRESS;
++    }
++}

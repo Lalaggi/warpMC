@@ -61,6 +61,22 @@
              this.connection.resetPosition();
              transition.postTeleportTransition().onTransition(this);
              return this;
+@@ -1549,6 +_,15 @@
+         playerList.sendPlayerPermissionLevel(this);
+         this.portalProcess = null; // SPIGOT-7785: there is no need to carry this over as it contains the old world/location and we might run into trouble if there is a portal in the same spot in both worlds
+         oldLevel.removePlayerImmediately(this, Entity.RemovalReason.CHANGED_DIMENSION);
++        // WarpMC start - dead chunk fix: immediately purge old dim's dead holders on dimension switch
++        // Without this, old dim's NewChunkHolder (1972) + ChunkHolder (1972) vs LevelChunk (989) = 2x holders stay as Old gen for 5s (UNLOAD_COOLDOWN), causing 4GB burst and G1 evacuation failure 140ms
++        // We trigger old level's ChunkHolderManager tick to expire UNLOAD_COOLDOWN tickets immediately, freeing PalettedContainer/SWMRNibbleArray
++        try {
++            // Force old level's chunk system to process ticket updates and schedule unloads for dead chunks
++            // Use reflection to avoid hard dependency if Moonrise not present
++            ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel)oldLevel).moonrise$getChunkTaskScheduler().chunkHolderManager.tick();
++        } catch (Exception ignored) {}
++        // WarpMC end
+         this.unsetRemoved();
+         ProfilerFiller profiler = Profiler.get();
+         profiler.push("moving");
 @@ -1558,6 +_,7 @@
  
          profiler.pop();

@@ -1,0 +1,22 @@
+--- a/net/minecraft/world/entity/ai/attributes/AttributeMap.java
++++ b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
+@@ -2,7 +_,7 @@
+ 
+ import com.google.common.collect.Multimap;
+ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
++import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+ import java.util.ArrayList;
+ import java.util.Collection;
+ import java.util.List;
+@@ -15,8 +_,8 @@
+ 
+ public class AttributeMap {
+     private final Map<Holder<Attribute>, AttributeInstance> attributes = new Object2ObjectOpenHashMap<>();
+-    private final Set<AttributeInstance> attributesToSync = new ObjectOpenHashSet<>();
+-    private final Set<AttributeInstance> attributesToUpdate = new ObjectOpenHashSet<>();
++    private final Set<AttributeInstance> attributesToSync = new ReferenceOpenHashSet<>(0);
++    private final Set<AttributeInstance> attributesToUpdate = new ReferenceOpenHashSet<>(0);
+     private final AttributeSupplier supplier;
+ 
+     public AttributeMap(final AttributeSupplier supplier) {

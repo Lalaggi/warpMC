@@ -1,137 +1,239 @@
-<div align="center">
+# WarpMC
 
-<a href="https://purpurmc.org">
-  <img src="https://user-images.githubusercontent.com/74448585/150906023-101cd383-da82-4a3c-9603-a3b5741c3994.png" alt="Purpur">
-</a>
+> High-performance fork of **Purpur** for Minecraft **26.2** (Tiny Takeover) — rebranded, optimized, and extended with server-side Fake Players.
 
-## Purpur
+WarpMC is a drop-in replacement for Purpur/Paper focused on **worldgen speed**, **memory efficiency**, and **AFK/bot gameplay**. It keeps full Purpur plugin compatibility (same `org.purpurmc.purpur` package, same `purpur.yml`) while adding targeted ports from the **InspirationForPerformancePatches** collection and a native FakePlayer API.
 
-[![MIT License](https://img.shields.io/github/license/PurpurMC/Purpur?&logo=github)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/PurpurMC/Purpur/build.yml?branch=ver%2F26.2&event=push&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bxSIVh1YQcYhQnSyIiuimVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APE0clJ0UVK/F9SaBHjwXE/3t173L0D/PUyU82OMUDVLCOViAuZ7KrQ9YogwujDEGYkZupzopiE5/i6h4+vdzGe5X3uz9Gj5EwG+ATiWaYbFvEG8dSmpXPeJ46woqQQnxOPGnRB4keuyy6/cS447OeZESOdmieOEAuFNpbbmBUNlXiSOKqoGuX7My4rnLc4q+Uqa96TvzCU01aWuU5zEAksYgkiBMioooQyLMRo1UgxkaL9uId/wPGL5JLJVQIjxwIqUCE5fvA/+N2tmZ8Yd5NCcaDzxbY/hoGuXaBRs+3vY9tunACBZ+BKa/krdWD6k/RaS4seAb3bwMV1S5P3gMsdoP9JlwzJkQI0/fk88H5G35QFwrdA95rbW3Mfpw9AmrpK3gAHh8BIgbLXPd4dbO/t3zPN/n4Ax9dyyerighsAAAAGYktHRAAAAAAAAPlDu38AAAAJcEhZcwAADdcAAA3XAUIom3gAAAAHdElNRQfmCBMWBjFhOpnxAAACyklEQVQ4y32TXWgdZRCGn8k5Z3e/bzcJRFuoDRqIIPGniaSl1qgXKYhiLUgleFESW1qQ4g94oVKQJmga0ILRBuvfheJFIbY3SmzRFsWgQrTQFlRoKSVXgcMxJiS7++1ukvHiNKGU6FzNDO8MMw8zwn9Yz5c6anKeChxiMk599aq8sZ5Obk3sGNd7G5aZCHJ+Oj8gAwD9I3rSJmyvzLHz+HG5frO+vOaNa3NXiUkKQj9hQ1jQgWrlyCCV6gIdtmBjoJwbPqgL+R08PDQkCUADwD0TerqzxFTJY++vz0l7c0q/F7P5+aNUqyvM2CU2RAV7hsek3XPs3/QHF7/YrSfrDVQrxrErdESNNTYByAp3NmWUTYaGGSuho+QltAGYRdqilChMeKbO4Ijang5+CVJmbcr20PG3n9NiY6ZOvCW9ACMHdDLIeDDIqTWmtAQJV6OMyhOTsqWBQQo/hvP7pFcWeDxwtAQxGqbEq3isI7EOjRy3NyuPPHtOur0UXWMQZXgAX78uP3sJpTBmyHfsGDmotdF+rQWObq/gnSCm9PQ3chnA3qgRgL5jmjXlTM/n7Ny8yJXRY2IA3tur0yaHF8blLoAzj2kaNNBpZvk2iGntuiZBHWLOtXJC3hbzV5SxtDq6yZmzCXOrsRezHNa4YBzlKGN6bQXryD96W+4PU14zGbw/oLMf79EPbAI2g7M9+smP3fqPKVAT81LnFWnzM1y9gYC9gWtwTD6MEsq+Y8Lm7DMZ7cZxt5/T5xd8Fy5SfuC6fA4QZjdd8eEX9eLwAZ1StHKiT1MARStnHtWZH7bpjKIVgKutmipq50O94Mr6+9oKR8ekyy7x5qd9/NmYslynK4WfUjWOqiAFgElZmY+41BTzcrAkW9d9ptO9etgU7I8S3vVyDtkY/JzPwoxXzCJjt6Uy+r/fuGq/3affezkPRSniJ0y2zsqT6+n+BfRHKWgwbKNIAAAAAElFTkSuQmCC)](https://purpurmc.org/downloads/)
-[![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/PurpurMC/Purpur?logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8%2F9hAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bxSIVh1YQcYhQnSyIiuimVShChVArtOpgcukXNGlIUlwcBdeCgx%2BLVQcXZ10dXAVB8APE0clJ0UVK%2FF9SaBHjwXE%2F3t173L0D%2FPUyU82OMUDVLCOViAuZ7KrQ9YogwujDEGYkZupzopiE5%2Fi6h4%2BvdzGe5X3uz9Gj5EwG%2BATiWaYbFvEG8dSmpXPeJ46woqQQnxOPGnRB4keuyy6%2FcS447OeZESOdmieOEAuFNpbbmBUNlXiSOKqoGuX7My4rnLc4q%2BUqa96TvzCU01aWuU5zEAksYgkiBMioooQyLMRo1UgxkaL9uId%2FwPGL5JLJVQIjxwIqUCE5fvA%2F%2BN2tmZ8Yd5NCcaDzxbY%2FhoGuXaBRs%2B3vY9tunACBZ%2BBKa%2FkrdWD6k%2FRaS4seAb3bwMV1S5P3gMsdoP9JlwzJkQI0%2Ffk88H5G35QFwrdA95rbW3Mfpw9AmrpK3gAHh8BIgbLXPd4dbO%2Ft3zPN%2Fn4Ax9dyyerighsAAAAGYktHRAAAAAAAAPlDu38AAAAJcEhZcwAADdcAAA3XAUIom3gAAAAHdElNRQfmCBMVKAA5pS6%2BAAABlElEQVQ4y82PP2gVQRDGf7N3t%2Bvdixpi0N5OELFKJ1iohBciKlgYJLX6YkBbC0sVooVFBAvBPw%2BFZzrJs7DR2iYHRhBsxNI8VLwUx92MRXJGxKCp9AfL7DfDfPutFO3z5wy5DuRlWU2OvLj7hduLYXh0ZSEkOh4SjUKiBK%2BEZP34Gu%2FtbebLE86Qa8BO4FDwyWmAbPjzMWACiNgEMdun6macwfJ6z2qxZYBI6ndAxR%2BRN%2FL1ZGeXlDqFkm%2Fv33nZjHZ0u2OZrw%2F7pBYf16Re8UEJ8VpNE33fP3BxgX%2BOFOOdtjmuGpoPtT51pNcrMZORx4%2FmslQnslAlWahItymZrz%2Bmqc4%2B2z%2B71BjE5uwesEeQsaLY%2FQp42LrfPUqwy2DNO03ZK9hN4Ehj4IDBjzjKCoC5aMDG9q%2BhBz%2BrWCN3KqptBtG89Xx%2BEWB1%2Bszr8OTBFMgkSLKWQAA%2BVCU3%2BK%2BQb%2B0LB4FLGHmrP39LNv3773Ei9IBphLnVduf4VhM4M9JGqGzc%2F5bYnDsrqlcQloaK0adbNfgOUn6NRlZZ46YAAAAASUVORK5CYII%3D)](https://www.codefactor.io/repository/github/PurpurMC/Purpur)
-[![Join us on Discord](https://discord.com/api/guilds/685683385313919172/widget.png?style=shield)](https://purpurmc.org/discord)
+**Current branch:** `warp/26.2` (MC 26.2, Paper commit `0ae1b423`, Java 25) — see [Releases](https://gitlab.com/Lalaggi/warpMC/-/releases) for ready-to-run jars.
 
-[![Stargazers](https://img.shields.io/github/stars/PurpurMC/Purpur?label=stars&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bxSIVh1YQcYhQnSyIiuimVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APE0clJ0UVK/F9SaBHjwXE/3t173L0D/PUyU82OMUDVLCOViAuZ7KrQ9YogwujDEGYkZupzopiE5/i6h4+vdzGe5X3uz9Gj5EwG+ATiWaYbFvEG8dSmpXPeJ46woqQQnxOPGnRB4keuyy6/cS447OeZESOdmieOEAuFNpbbmBUNlXiSOKqoGuX7My4rnLc4q+Uqa96TvzCU01aWuU5zEAksYgkiBMioooQyLMRo1UgxkaL9uId/wPGL5JLJVQIjxwIqUCE5fvA/+N2tmZ8Yd5NCcaDzxbY/hoGuXaBRs+3vY9tunACBZ+BKa/krdWD6k/RaS4seAb3bwMV1S5P3gMsdoP9JlwzJkQI0/fk88H5G35QFwrdA95rbW3Mfpw9AmrpK3gAHh8BIgbLXPd4dbO/t3zPN/n4Ax9dyyerighsAAAAGYktHRAAAAAAAAPlDu38AAAAJcEhZcwAADdcAAA3XAUIom3gAAAAHdElNRQfmCBMVNjtc7/hFAAABIElEQVQ4y62SzS5DURSFv6smXkAUCRU0UdKYGNTPyCsYYOYFGGi8Ao9QM0PxCh6CgQ4qfiLpBFEjdKCfySaXtDch1uScs9Ze62TvcyAD6o66zV+gjqpvalsd61XXl5GxBySx3/3t7UPqi1pTD9VXdaRbbZIyDQLTwBSwBqzGGaABnAInwCXQSJLk/tO4orb8jra6nwo/CC6NlrqMOq421Y5aVSfUXJe2cqFVo7b5NdwIuVaf1IWM2cyrD+qdOvlTLERIS53pYi6FdqMWet2wGP1tdNE2Q1vK+gfDsdbDlFfzwV3Ems8KmAXegcd4hSvgVq0Bz6GV0ob+HgF1YAA4Cn4LWA9tLusHnscTHavFFF8MrqOeZQVU1HKGXlYr/Cc+AKuOI2h/Jrf7AAAAAElFTkSuQmCC)](https://github.com/PurpurMC/Purpur/stargazers)
-[![Forks](https://img.shields.io/github/forks/PurpurMC/Purpur?label=forks&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bxSIVh1YQcYhQnSyIiuimVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APE0clJ0UVK/F9SaBHjwXE/3t173L0D/PUyU82OMUDVLCOViAuZ7KrQ9YogwujDEGYkZupzopiE5/i6h4+vdzGe5X3uz9Gj5EwG+ATiWaYbFvEG8dSmpXPeJ46woqQQnxOPGnRB4keuyy6/cS447OeZESOdmieOEAuFNpbbmBUNlXiSOKqoGuX7My4rnLc4q+Uqa96TvzCU01aWuU5zEAksYgkiBMioooQyLMRo1UgxkaL9uId/wPGL5JLJVQIjxwIqUCE5fvA/+N2tmZ8Yd5NCcaDzxbY/hoGuXaBRs+3vY9tunACBZ+BKa/krdWD6k/RaS4seAb3bwMV1S5P3gMsdoP9JlwzJkQI0/fk88H5G35QFwrdA95rbW3Mfpw9AmrpK3gAHh8BIgbLXPd4dbO/t3zPN/n4Ax9dyyerighsAAAAGYktHRAAAAAAAAPlDu38AAAAJcEhZcwAADdcAAA3XAUIom3gAAAAHdElNRQfmCBMVNCYN3/YeAAAA/UlEQVQ4y7WTQUoDQRBFf01czlJcxUyOINGjjAvFHMFzZGdygOwDwTtk6UZcqLlAxCAuMigug89FamIzdAIN+qGhq/6v6qrqbumvAJwBj8AHMAQs4DJgBHy65jSW4Bl4AaZsUAbcufumrnmquSzIcSzpTtLA7XbA1fuBa9qxCob8YgUUAdcFqoC/iSXIgLELOhG+49w4nM+2BTP7ljR3M4/MufbNzYxdN1E0Sm2ialZnsVIllZKOJF24eyLpXdKtmS1S3sYMmO3THOwJziUdbrbkZvaVcnILeAh6vweylAQ9D7z2BXCS0sJS0lrSpdtrSW+pn6sPLIFX4Er/hR9C0wl1FTBzNwAAAABJRU5ErkJggg==)](https://github.com/PurpurMC/Purpur/network/members)
-[![Watchers](https://img.shields.io/github/watchers/PurpurMC/Purpur?label=watchers&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bxSIVh1YQcYhQnSyIiuimVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APE0clJ0UVK/F9SaBHjwXE/3t173L0D/PUyU82OMUDVLCOViAuZ7KrQ9YogwujDEGYkZupzopiE5/i6h4+vdzGe5X3uz9Gj5EwG+ATiWaYbFvEG8dSmpXPeJ46woqQQnxOPGnRB4keuyy6/cS447OeZESOdmieOEAuFNpbbmBUNlXiSOKqoGuX7My4rnLc4q+Uqa96TvzCU01aWuU5zEAksYgkiBMioooQyLMRo1UgxkaL9uId/wPGL5JLJVQIjxwIqUCE5fvA/+N2tmZ8Yd5NCcaDzxbY/hoGuXaBRs+3vY9tunACBZ+BKa/krdWD6k/RaS4seAb3bwMV1S5P3gMsdoP9JlwzJkQI0/fk88H5G35QFwrdA95rbW3Mfpw9AmrpK3gAHh8BIgbLXPd4dbO/t3zPN/n4Ax9dyyerighsAAAAGYktHRAAAAAAAAPlDu38AAAAJcEhZcwAADdcAAA3XAUIom3gAAAAHdElNRQfmCBMVNw4TRw0nAAAA3UlEQVQ4y83SP04CURAG8I0lewHOwAFUaiwkdmAlp8CL4FHopfIvtOIJWE3opIBK489mQPKy6xYWOskkL9/MN/PNzMuyf2fIcYkZVuGzwPI68gle8Yl7jMIfAntBp4o8wAeecFgSP8I8cgZp8DwC12j8oLCBCd7R34ItbHCzT8ZZSC7QTYrcYo1WhjGWaCbdCt+2SGLN4IwPfnu07QjrkhG6oWKB0+TMd7sRAuzHYuqWmO8tsVd1xjmOS8htPEfORVWHTmweHnEVPg2sqPxIicxhFFjhLd7D2q/8J/YFHSJt9VSqQ08AAAAASUVORK5CYII=)](https://github.com/PurpurMC/Purpur/watchers)
+---
 
-Purpur is a drop-in replacement for [Paper](https://github.com/PaperMC/Paper) servers designed for configurability, new fun and exciting gameplay features, and performance built on top of [Paper](https://github.com/PaperMC/Paper/).
+## Why WarpMC over plain Purpur?
 
-</div>
+| Area | Purpur 26.2 | WarpMC 26.2 |
+|------|---------------|---------------|
+| **Branding** | `Purpur` / `purpurmc:purpur` | `WarpMC` / `warpmc:warpmc` (adventure key `warpmc:warpmc`) |
+| **Worldgen** | vanilla `PalettedContainer.set()` | **noisium** — direct palette writes in `NoiseBasedChunkGenerator.doFill()`, 4 access transformers, cached counters |
+| **Memory** | vanilla `BlockState` tables | **FerriteCore** — FastMap neighbor lookup (~770 MB saved), cache dedup (~200 MB), `PatchedDataComponentMap` empty-map fix |
+| **Allocations** | HashMap-heavy | **Lithium** Collections — `Brain`, `LevelChunk.tickersInLevel`, `CompoundTag`, `ComposterBlock` → fastutil `Object2ObjectOpenHashMap` |
+| **Bots / AFK** | not built-in | **FakePlayer API** — full `Player` instances with no client, timeout, damage toggle, hidden flag |
 
-## Contact
-Join us on Discord:
+Internals intentionally stay on `org.purpurmc.purpur` / `org.purpurmc.purpur` group and `purpur.yml` so existing plugins keep working.
 
-[![Join us on Discord](https://discord.com/api/guilds/685683385313919172/widget.png?style=banner2)](https://purpurmc.org/discord)
+---
+
+## Features
+
+### Performance Patches (from `InspirationForPerformancePatches/`)
+
+- **noisium (forked)** — `purpur.at` exposes `LevelChunkSection.states`, `nonEmptyBlockCount`, `tickingFluidCount`, `tickingBlockCount`; `NoiseBasedChunkGenerator` bypasses lock overhead with `getAndSetUnchecked()` + manual counter increments. Safe under Paper's `acquire()`/`release()` chunk section bracketing.
+- **FerriteCore** — `FastMap` replaces `Table<Property,Comparable,BlockState>` per-state hash tables with a flat `int[]` index; per-state `values` map nulled and reconstructed; `BlockState` cache dedup for collision shapes + `faceSturdy`; `PatchedDataComponentMap` avoids copying for common empty cases.
+- **Lithium** (segment 01 + partial) — `LevelChunk`, `Brain` memories/sensors, `CompoundTag.copy()`, `ComposterBlock` empty slots, `GolemRandomStroll`, `LlamaFollowCaravan`, `AttributeMap`.
+
+Excluded for now (documented in `plan.md`): Alternate Current (already in Paper), VMP (Moonrise covers it, lock removal unsafe), hopper/block-entity sleeping (too invasive).
+
+### FakePlayer API (`FAKE_PLAYER_API.md`)
+
+Server-side bots that are real `Player` objects — no client, no `EmbeddedChannel` traffic, fully ticked by the server.
+
+```java
+FakePlayerFactory factory = Purpur.getFakePlayerFactory();
+if (factory == null) return;
+
+FakePlayer bot = factory.createBuilder(player)
+    .world(player.getWorld())
+    .location(player.getLocation())
+    .timeoutMinutes(30)
+    .reason("AFK")
+    .damageDisabled(true)
+    .hidden(false)
+    .resetHealthOnDeath(true)
+    .spawn();
+
+// later
+factory.removeFakePlayer(player.getUniqueId());
+Collection<FakePlayer> all = factory.getActiveFakePlayers();
+```
+
+Highlights:
+- `FakeServerPlayer` extends `ServerPlayer`, `FakeConnection`/`FakePacketListener` are no-ops, `CraftFakePlayer` bridges to Bukkit.
+- Fires `PlayerJoinEvent`/`PlayerQuitEvent`/`PlayerDeathEvent` normally, appears in tab list (unless `hidden`), can trigger redstone/pressure plates, be targeted by mobs, chunk-loaded, teleported.
+- Timeout checked each `MinecraftServer.tickServer()` tick; real login with same UUID evicts the fake first (`ServerLoginPacketListenerImpl`); death respawns a new `FakeServerPlayer` preserving config; `PistonMovingBlockEntity` allows slime bounce.
+
+See `FAKE_PLAYER_API.md` for full builder options, `FakePlayer` interface, and guard/AFK examples.
+
+### Rebrand
+
+- All player-facing strings: `CrashReport`, `WatchdogThread`, `CraftScheduler`, `PaperConsole`, `Metrics`, `ServerBuildInfoImpl` → WarpMC.
+- Manifest `Implementation-Title`/`Specification-*` → `WarpMC`; `Brand-Id` `warpmc:warpmc`, `Brand-Name` `WarpMC`.
+- Error footers point to `https://github.com/lalaggi/warpMC` (and now `https://gitlab.com/Lalaggi/warpMC`).
+- Logo patch (`purpur-server/paper-patches/features/0001-Rebrand.patch`) still Purpur artwork — placeholder for WarpMC logo.
+
+---
+
+## Project Layout
+
+```
+purpur-api/paper-patches/          # API rebrand + FakePlayer interfaces
+purpur-api/src/main/java/org/purpurmc/purpur/player/  # FakePlayer, FakePlayerBuilder, FakePlayerFactory
+purpur-server/paper-patches/features/0001-Rebrand.patch  # main rebrand
+purpur-server/paper-patches/features/0006-...CraftEntity  # FakePlayer craft bridge
+purpur-server/minecraft-patches/sources/  # NMS patches (FakeServerPlayer, FakeConnection, Packet stuff, noisium, etc.)
+purpur-server/src/main/java/org/purpurmc/purpur/player/FakeServerPlayerManager.java
+build-data/purpur.at               # access transformers (LevelChunkSection fields)
+InspirationForPerformancePatches/  # upstream reference copies (FerriteCore, lithium, noisium-forked)
+plan.md / ferritecore-patch.md / noisium-patch.md / lithium-patches/
+```
+
+Patch workflow (paperweight):
+```bash
+./gradlew applyAllPatches          # apply all patches from scratch (root project)
+# edit source under purpur-server/src/minecraft/java/net/minecraft/...
+./gradlew :purpur-server:fixupMinecraftSourcePatches
+./gradlew :purpur-server:rebuildMinecraftSourcePatches
+./gradlew :purpur-server:applyMinecraftPatches  # verify
+```
+
+---
+
+## Building
+
+**Requirements:** Java 25, Git (clone, don't download zip).
+
+```bash
+git clone https://gitlab.com/Lalaggi/warpMC.git
+cd warpMC
+git checkout warp/26.2
+./gradlew applyAllPatches          # first time: decompile + apply
+
+# standard jars (not runnable)
+./gradlew build
+# -> purpur-api/build/libs/purpur-api-*.jar
+# -> purpur-server/build/libs/purpur-server-*.jar
+
+# runnable server jar (Mojmap bundler / paperclip)
+./gradlew createMojmapBundlerJar
+# -> purpur-server/build/libs/purpur-bundler-*.jar  (~95 MB)
+# -> purpur-server/build/libs/purpur-paperclip-*.jar (~58 MB)
+
+# install to local maven
+./gradlew publishToMavenLocal
+```
+
+The jars under `purpur-server/build/libs/` **are** the server — run with `java -jar purpur-bundler-*.jar` or `purpur-paperclip-*.jar`.
+
+---
 
 ## Downloads
-Downloads can be obtained from the [downloads page](https://purpurmc.org/downloads/) or the [downloads API](https://api.purpurmc.org).
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/PurpurMC/Purpur/build.yml?branch=ver%2F26.1.2event=push&label=Downloads&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bxSIVh1YQcYhQnSyIiuimVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APE0clJ0UVK/F9SaBHjwXE/3t173L0D/PUyU82OMUDVLCOViAuZ7KrQ9YogwujDEGYkZupzopiE5/i6h4+vdzGe5X3uz9Gj5EwG+ATiWaYbFvEG8dSmpXPeJ46woqQQnxOPGnRB4keuyy6/cS447OeZESOdmieOEAuFNpbbmBUNlXiSOKqoGuX7My4rnLc4q+Uqa96TvzCU01aWuU5zEAksYgkiBMioooQyLMRo1UgxkaL9uId/wPGL5JLJVQIjxwIqUCE5fvA/+N2tmZ8Yd5NCcaDzxbY/hoGuXaBRs+3vY9tunACBZ+BKa/krdWD6k/RaS4seAb3bwMV1S5P3gMsdoP9JlwzJkQI0/fk88H5G35QFwrdA95rbW3Mfpw9AmrpK3gAHh8BIgbLXPd4dbO/t3zPN/n4Ax9dyyerighsAAAAGYktHRAAAAAAAAPlDu38AAAAJcEhZcwAADdcAAA3XAUIom3gAAAAHdElNRQfmCBMWBjFhOpnxAAACyklEQVQ4y32TXWgdZRCGn8k5Z3e/bzcJRFuoDRqIIPGniaSl1qgXKYhiLUgleFESW1qQ4g94oVKQJmga0ILRBuvfheJFIbY3SmzRFsWgQrTQFlRoKSVXgcMxJiS7++1ukvHiNKGU6FzNDO8MMw8zwn9Yz5c6anKeChxiMk599aq8sZ5Obk3sGNd7G5aZCHJ+Oj8gAwD9I3rSJmyvzLHz+HG5frO+vOaNa3NXiUkKQj9hQ1jQgWrlyCCV6gIdtmBjoJwbPqgL+R08PDQkCUADwD0TerqzxFTJY++vz0l7c0q/F7P5+aNUqyvM2CU2RAV7hsek3XPs3/QHF7/YrSfrDVQrxrErdESNNTYByAp3NmWUTYaGGSuho+QltAGYRdqilChMeKbO4Ijang5+CVJmbcr20PG3n9NiY6ZOvCW9ACMHdDLIeDDIqTWmtAQJV6OMyhOTsqWBQQo/hvP7pFcWeDxwtAQxGqbEq3isI7EOjRy3NyuPPHtOur0UXWMQZXgAX78uP3sJpTBmyHfsGDmotdF+rQWObq/gnSCm9PQ3chnA3qgRgL5jmjXlTM/n7Ny8yJXRY2IA3tur0yaHF8blLoAzj2kaNNBpZvk2iGntuiZBHWLOtXJC3hbzV5SxtDq6yZmzCXOrsRezHNa4YBzlKGN6bQXryD96W+4PU14zGbw/oLMf79EPbAI2g7M9+smP3fqPKVAT81LnFWnzM1y9gYC9gWtwTD6MEsq+Y8Lm7DMZ7cZxt5/T5xd8Fy5SfuC6fA4QZjdd8eEX9eLwAZ1StHKiT1MARStnHtWZH7bpjKIVgKutmipq50O94Mr6+9oKR8ekyy7x5qd9/NmYslynK4WfUjWOqiAFgElZmY+41BTzcrAkW9d9ptO9etgU7I8S3vVyDtkY/JzPwoxXzCJjt6Uy+r/fuGq/3affezkPRSniJ0y2zsqT6+n+BfRHKWgwbKNIAAAAAElFTkSuQmCC)](https://purpurmc.org/downloads/)
+Prebuilt jars are attached to **GitLab Releases** (this repo → Releases). The `latest` tag tracks the tip of `warp/26.2`:
 
-Downloads API endpoints:
- * List versions of Minecraft with builds available:
-   `https://api.purpurmc.org/v2/purpur`
- * List builds for a version of Minecraft:
-   `https://api.purpurmc.org/v2/purpur/<version>`
- * Download a specific build of a specific version:
-   `https://api.purpurmc.org/v2/purpur/<version>/<build>/download`
- * Download the latest build for a version of Minecraft:
-   `https://api.purpurmc.org/v2/purpur/<version>/latest/download`
+- `purpur-bundler-26.2.local-SNAPSHOT.jar` — recommended server jar
+- `purpur-paperclip-26.2.local-SNAPSHOT.jar`
+- `purpur-server-26.2.local-SNAPSHOT.jar` + `purpur-api-*.jar`
 
-## License
-All patches are licensed under the MIT license, unless otherwise noted in the patch headers.
+If you previously used `purpurmc.org/downloads`, switch to the GitLab Releases page — WarpMC does not publish to the Purpur API.
 
-[![MIT License](https://img.shields.io/github/license/PurpurMC/Purpur?&logo=github)](LICENSE)
+---
 
-See [PaperMC/Paper](https://github.com/PaperMC/Paper), and [PaperMC/Paperweight](https://github.com/PaperMC/paperweight) for the license of material used by this project.
+## API / Plugin Usage
 
-## bStats
+`purpur-api` is the same Maven coordinates as Purpur (compatibility):
 
-[![bStats Graph Data](https://bstats.org/signatures/server-implementation/Purpur.svg)](https://bstats.org/plugin/server-implementation/Purpur)
-
-
-## API
-
-### [Javadoc](https://purpurmc.org/javadoc)
-
-### Dependency Information
-Maven
 ```xml
 <repository>
-    <id>purpur</id>
-    <url>https://repo.purpurmc.org/snapshots</url>
+  <id>purpur</id>
+  <url>https://repo.purpurmc.org/snapshots</url>
 </repository>
-```
-```xml
 <dependency>
-    <groupId>org.purpurmc.purpur</groupId>
-    <artifactId>purpur-api</artifactId>
-    <version>[26.2.build,)</version>
-    <scope>provided</scope>
+  <groupId>org.purpurmc.purpur</groupId>
+  <artifactId>purpur-api</artifactId>
+  <version>[26.2.build,)</version>
+  <scope>provided</scope>
 </dependency>
 ```
 
-Gradle
-```kotlin
-repositories {
-    maven("https://repo.purpurmc.org/snapshots")
+For local WarpMC builds after `publishToMavenLocal`, resolve from `mavenLocal()`.
+
+FakePlayer detection in listeners:
+
+```java
+@EventHandler
+public void onDamage(EntityDamageEvent e) {
+    if (e.getEntity() instanceof FakePlayer fp && fp.isDamageDisabled())
+        e.setCancelled(true);
 }
 ```
-```kotlin
-dependencies {
-    compileOnly("org.purpurmc.purpur:purpur-api:26.2.build.+")
-}
+
+---
+
+## WarpAFK — Unplugged AFK for WarpMC
+
+Standalone port of [sakura-ryoko/unplugged-afk](https://github.com/sakura-ryoko/unplugged-afk) (Fabric, LGPL-3.0) as a Paper plugin in [`warp-afk/`](./warp-afk) (gitignored, standalone `main` repo).
+
+- `/unplug [minutes] [reason]` / `/afk` — spawn a same-UUID bot via `FakePlayerFactory`, kick yourself, bot stays ticked, auto-expires, hides from tab if configured
+- `/unplugged-admin spawn|kick|info|list|save|reload|purge|set` — parity with upstream admin commands
+- Persists to `plugins/WarpAFK/unplugged.json`, restores on restart (remaining-time adjusted for downtime)
+- Honors `unplugged.disable-damage`, `hide-player`, `reset-health-on-death` (FakePlayer respawns with full health/food instead of staying dead)
+
+Build after `publishToMavenLocal` from the server:
+
+```bash
+./gradlew publishToMavenLocal
+cd warp-afk && ./gradlew build  # -> build/libs/warp-afk-0.1.0-SNAPSHOT.jar
 ```
 
-Yes, this also includes all API provided by Paper, Spigot, and Bukkit.
+The plugin has its own git history (`git -C warp-afk log`) — push it to a separate GitLab project if you want CI for the plugin alone.
 
-## Building and setting up
+## CI
 
-#### Initial setup
-First, <u>clone</u> this repository. Do not download it.
+- **GitLab (primary, local runner):** [`.gitlab-ci.yml`](.gitlab-ci.yml) targets the `local-podman-warpMC` runner (`tags: warpmc`, `privileged`, podman `unix:///run/user/1000/podman/podman.sock`). It runs `applyAllPatches → build → createMojmapBundlerJar` on every push to `warp/*` and stores `purpur-*.jar` as pipeline artifacts (1 week). See [`../flatpak-repo/.gitlab-ci.yml`](../flatpak-repo/.gitlab-ci.yml) for the original podman-runner pattern.
+- **GitHub Actions (mirror):** [`.github/workflows/build.yml`](.github/workflows/build.yml) (Java 25, Gradle 9) runs on `warp/*` + `ver/*`, uploads jars as artifacts.
 
-Then run the following command in the root directory:
+Registered runner (already running via `systemctl --user status gitlab-runner`):
 
+```bash
+gitlab-runner verify  # local-podman-warpMC online, tags warpmc,warp,local-podman
+# re-register if needed:
+gitlab-runner register --url https://gitlab.com --registration-token GR1348941... \
+  --description "local-podman-warpMC" --tag-list "warpmc,warp,local-podman" --executor docker
+# then edit ~/.gitlab-runner/config.toml: host = "unix:///run/user/1000/podman/podman.sock", privileged = true
+systemctl --user restart gitlab-runner
 ```
-./gradlew applyAllPatches
-```
 
-The project is now ready for use in your IDE.
+## Roadmap
 
-#### Creating a patch
+- [x] Rebrand Purpur → WarpMC (brand id, manifest, messages)
+- [x] noisium core + optional (loop order, cached fields)
+- [x] FerriteCore cache dedup + data-component fix
+- [x] Lithium collections/allocations (01) + partial entity
+- [x] FakePlayer system (API + NMS + CraftBukkit bridge) — fixed: proper death revive, hidden handling, FakePacketListener overrides, timeout tick
+- [x] GitLab CI on local podman runner (`.gitlab-ci.yml` + `local-podman-warpMC`)
+- [x] WarpAFK plugin port of unplugged-afk (`warp-afk/` standalone repo)
+- [ ] Lithium 02/05/06/04/07/03 in order (world, entity, AI, explosion, raycast, shapes)
+- [ ] FerriteCore FastMap remaining (property storage)
+- [ ] WarpMC logo + docs polish
+- [ ] GitLab Packages Maven repo
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See `plan.md` for the full 3-phase plan and excluded patches table.
 
-#### Compiling
+---
 
-Use the command `./gradlew build` to build the API and server. Compiled JARs
-will be placed under `purpur-api/build/libs` and `purpur-server/build/libs`.
-**These JARs are not used to start a server.**
+## Credits
 
-To compile a server-ready purpurclip jar, run `./gradlew createMojmapBundlerJar`.
-To install the `purpur-api` and `purpur` dependencies to your local Maven repo, run `./gradlew publishToMavenLocal`. The compiled purpurclip jar will be in `purpur-server/build/libs`.
+- **PurpurMC/Purpur** — upstream fork this project is built on (MIT)
+- **PaperMC/Paper** & **Paperweight** — base server + patch toolchain
+- **FerriteCore** / **Lithium** / **noisium** — performance patch sources under `InspirationForPerformancePatches/` (see their licenses)
+- **YourKit** & **JetBrains** — profiling/IDE sponsors of Purpur (see original README)
 
-Special Thanks To:
--------------
+---
 
-### YourKit
+## License
 
-![YourKit-Logo](https://www.yourkit.com/images/yklogo.png)
+MIT — all WarpMC patches are MIT unless noted in patch headers. See `LICENSE`. Paper/Paperweight material retains its original license (`PaperMC/Paper`, `PaperMC/paperweight`).
 
-[YourKit](https://www.yourkit.com/), makers of the outstanding Java profiler,
-support open source projects of all kinds with their full-featured [Java](https://www.yourkit.com/java/profiler)
-and [.NET](https://www.yourkit.com/.net/profiler) application profilers. We thank them for allowing us to use their
-software so we can make Purpur the best it can be.
+---
 
-### Our Contributors
+## Status
 
-[![Contributors](https://purpurmc.org/svg?type=contributors&size=64&gap=4&cols=10)](https://github.com/PurpurMC/Purpur/graphs/contributors)
-
-### Our Sponsors
-
-[![GitHub Sponsors](https://purpurmc.org/svg?type=sponsors&size=64&gap=4&cols=10)](https://github.com/sponsors/PurpurMC)
-
-### Our Backers
-
-[![Sponsors](https://purpurmc.org/svg?type=opencollective&size=64&gap=4&cols=10)](https://opencollective.com/purpurmc)
+Experimental / WIP — the `warp/26.2` branch is under active porting, `codebase is kinda cooked so Releases is my last hope` is the vibe but the `95 MB` bundler jar in Releases does boot. Issues/PRs welcome at `https://gitlab.com/Lalaggi/warpMC`.

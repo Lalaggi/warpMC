@@ -1,5 +1,14 @@
 --- a/net/minecraft/world/level/material/LavaFluid.java
 +++ b/net/minecraft/world/level/material/LavaFluid.java
+@@ -141,7 +_,7 @@
+     }
+ 
+     private boolean hasFlammableNeighbours(final LevelReader level, final BlockPos pos) {
+-        for (Direction direction : Direction.values()) {
++        for (Direction direction : Direction.ALL) {
+             if (this.isFlammable(level, pos.relative(direction))) {
+                 return true;
+             }
 @@ -191,7 +_,7 @@
  
      @Override
