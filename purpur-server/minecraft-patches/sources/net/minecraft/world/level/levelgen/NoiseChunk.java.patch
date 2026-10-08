@@ -1,0 +1,68 @@
+--- a/net/minecraft/world/level/levelgen/NoiseChunk.java
++++ b/net/minecraft/world/level/levelgen/NoiseChunk.java
+@@ -4,7 +_,6 @@
+ import it.unimi.dsi.fastutil.longs.Long2IntMap;
+ import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+ import java.util.ArrayList;
+-import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+ import net.minecraft.core.Holder;
+@@ -31,7 +_,10 @@
+     private final int firstNoiseZ;
+     private final List<NoiseChunk.NoiseInterpolator> interpolators;
+     private final List<NoiseChunk.CacheAllInCell> cellCaches;
+-    private final Map<DensityFunction, DensityFunction> wrapped = new HashMap<>();
++    private final Map<DensityFunction, DensityFunction> wrapped = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>(); // WarpMC - per-chunk wrap memo without HashMap$Node allocs
++    // WarpMC - hoist wrap visitor: mapAll(this::wrap) runs ~8x per chunk, method ref allocs each time
++    private final DensityFunction.Visitor wrapVisitor = this::wrap;
++    private final java.util.function.Function<DensityFunction, DensityFunction> wrapNewFn = this::wrapNew;
+     private final Long2IntMap preliminarySurfaceLevelCache = new Long2IntOpenHashMap();
+     private final Aquifer aquifer;
+     private final DensityFunction preliminarySurfaceLevel;
+@@ -140,7 +_,7 @@
+         }
+ 
+         NoiseRouter router = randomState.router();
+-        NoiseRouter wrappedRouter = router.mapAll(this::wrap);
++        NoiseRouter wrappedRouter = router.mapAll(this.wrapVisitor);
+         this.preliminarySurfaceLevel = wrappedRouter.preliminarySurfaceLevel();
+         if (!settings.isAquifersEnabled()) {
+             this.aquifer = Aquifer.createDisabled(globalFluidPicker);
+@@ -156,7 +_,7 @@
+         DensityFunction fullNoiseValue = DensityFunctions.cacheAllInCell(
+                 DensityFunctions.add(wrappedRouter.finalDensity(), DensityFunctions.BeardifierMarker.INSTANCE)
+             )
+-            .mapAll(this::wrap);
++            .mapAll(this.wrapVisitor);
+         this.fullNoiseDensity = fullNoiseValue;
+         builder.add(context -> this.aquifer.computeSubstance(context, fullNoiseValue.compute(context)));
+         if (settings.oreVeinsEnabled()) {
+@@ -168,12 +_,12 @@
+ 
+     protected Climate.Sampler cachedClimateSampler(final NoiseRouter noises, final List<Climate.ParameterPoint> spawnTarget) {
+         return new Climate.Sampler(
+-            noises.temperature().mapAll(this::wrap),
+-            noises.vegetation().mapAll(this::wrap),
+-            noises.continents().mapAll(this::wrap),
+-            noises.erosion().mapAll(this::wrap),
+-            noises.depth().mapAll(this::wrap),
+-            noises.ridges().mapAll(this::wrap),
++            noises.temperature().mapAll(this.wrapVisitor),
++            noises.vegetation().mapAll(this.wrapVisitor),
++            noises.continents().mapAll(this.wrapVisitor),
++            noises.erosion().mapAll(this.wrapVisitor),
++            noises.depth().mapAll(this.wrapVisitor),
++            noises.ridges().mapAll(this.wrapVisitor),
+             spawnTarget
+         );
+     }
+@@ -373,7 +_,7 @@
+     }
+ 
+     protected DensityFunction wrap(final DensityFunction function) {
+-        return this.wrapped.computeIfAbsent(function, this::wrapNew);
++        return this.wrapped.computeIfAbsent(function, this.wrapNewFn);
+     }
+ 
+     private DensityFunction wrapNew(final DensityFunction function) {

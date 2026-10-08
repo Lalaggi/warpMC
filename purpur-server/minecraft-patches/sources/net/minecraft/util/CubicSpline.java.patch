@@ -1,0 +1,19 @@
+--- a/net/minecraft/util/CubicSpline.java
++++ b/net/minecraft/util/CubicSpline.java
+@@ -298,10 +_,15 @@
+ 
+         @Override
+         public CubicSpline<I> mapCoordinates(final UnaryOperator<I> mapper) {
++            // WarpMC - avoid stream alloc per spline rebuild (runs per NoiseChunk via mapAll)
++            List<CubicSpline<I>> mapped = new ArrayList<>(this.values.size());
++            for (int i = 0; i < this.values.size(); i++) {
++                mapped.add(this.values.get(i).mapCoordinates(mapper));
++            }
+             return new CubicSpline.Multipoint(
+                 (I)((BoundedFloatFunction)mapper.apply(this.coordinate)),
+                 this.locations,
+-                this.values.stream().map(v -> v.mapCoordinates(mapper)).toList(),
++                mapped,
+                 this.derivatives
+             );
+         }
