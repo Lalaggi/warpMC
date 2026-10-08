@@ -8,12 +8,15 @@
  import java.util.List;
  import java.util.Map;
  import net.minecraft.core.Holder;
-@@ -31,7 +_,10 @@
+@@ -31,7 +_,13 @@
      private final int firstNoiseZ;
      private final List<NoiseChunk.NoiseInterpolator> interpolators;
      private final List<NoiseChunk.CacheAllInCell> cellCaches;
 -    private final Map<DensityFunction, DensityFunction> wrapped = new HashMap<>();
-+    private final Map<DensityFunction, DensityFunction> wrapped = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>(); // WarpMC - per-chunk wrap memo without HashMap$Node allocs
++    // WarpMC - per-chunk wrap memo with fastutil (no HashMap$Node allocs).
++    // NOTE: must stay equality-based, NOT identity: datapacks contain duplicate
++    // cache_once markers (e.g. overworld/offset.json) whose sharing vanilla relies on.
++    private final Map<DensityFunction, DensityFunction> wrapped = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
 +    // WarpMC - hoist wrap visitor: mapAll(this::wrap) runs ~8x per chunk, method ref allocs each time
 +    private final DensityFunction.Visitor wrapVisitor = this::wrap;
 +    private final java.util.function.Function<DensityFunction, DensityFunction> wrapNewFn = this::wrapNew;
