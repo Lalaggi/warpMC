@@ -1,5 +1,38 @@
 --- a/net/minecraft/world/level/chunk/LevelChunkSection.java
 +++ b/net/minecraft/world/level/chunk/LevelChunkSection.java
+@@ -170,6 +_,32 @@
+         return previous;
+     }
+ 
++    // WarpMC - noisium: noise-stage fast path. Caller guarantees the section is fresh
++    // (previous state is always air: doFill is the first block writer at noise stage) and
++    // holds the section lock, so previous-state handling and locking are skipped entirely.
++    // Counter updates mirror setBlockState for the air -> solid transition exactly, including
++    // the Paper block-counting callback with oldState known to be air (never special, never
++    // equal to the new state) and the client branch (worldgen sections are never clients).
++    public void setBlockStateFresh(final int sectionX, final int sectionY, final int sectionZ, final BlockState state) {
++        this.states.getAndSetUnchecked(sectionX, sectionY, sectionZ, state);
++        this.nonEmptyBlockCount++;
++        if (state.isRandomlyTicking()) {
++            this.tickingBlockCount++;
++        }
++
++        net.minecraft.world.level.material.FluidState fluid = state.getFluidState();
++        if (!fluid.isEmpty()) {
++            this.fluidCount++;
++            if (fluid.isRandomlyTicking()) {
++                this.tickingFluidCount++;
++            }
++        }
++
++        if (!this.isClient && ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.isSpecialCollidingBlock(state)) {
++            ++this.specialCollidingBlocks;
++        }
++    }
++
+     public boolean hasOnlyAir() {
+         return this.nonEmptyBlockCount == 0;
+     }
 @@ -323,9 +_,10 @@
          PalettedContainer<Holder<Biome>> newBiomes = this.biomes.recreate();
          int size = 4;

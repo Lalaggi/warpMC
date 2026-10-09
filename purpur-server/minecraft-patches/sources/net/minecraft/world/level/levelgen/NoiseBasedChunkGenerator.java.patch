@@ -30,13 +30,13 @@
                  }
              }
          }, Runnable::run); // Paper - rewrite chunk system
-@@ -443,6 +_,9 @@
+@@ -443,7 +_,8 @@
  
                                  state = this.debugPreliminarySurfaceLevel(noiseChunk, posX, posY, posZ, state);
                                  if (state != AIR && !SharedConstants.debugVoidTerrain(centerChunk.getPos())) {
-+                                    // WarpMC - noisium: use setBlockState with checkThreading=false to keep counts consistent
-+                                    // (fluidCount, tickingBlocks, specialCollidingBlocks) while still bypassing
-+                                    // PalettedContainer lock overhead via getAndSetUnchecked inside acquired section.
-                                     section.setBlockState(xInSection, yInSection, zInSection, state, false);
+-                                    section.setBlockState(xInSection, yInSection, zInSection, state, false);
++                                    // WarpMC - noisium: fresh-section fast path (previous is always air here)
++                                    section.setBlockStateFresh(xInSection, yInSection, zInSection, state);
                                      oceanFloor.update(xInSection, posY, zInSection, state);
                                      worldSurface.update(xInSection, posY, zInSection, state);
+                                     if (aquifer.shouldScheduleFluidUpdate() && !state.getFluidState().isEmpty()) {
