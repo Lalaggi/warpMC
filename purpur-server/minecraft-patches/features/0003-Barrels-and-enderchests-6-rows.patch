@@ -5,10 +5,10 @@ Subject: [PATCH] Barrels and enderchests 6 rows
 
 
 diff --git a/net/minecraft/server/players/PlayerList.java b/net/minecraft/server/players/PlayerList.java
-index 3e18c6ca8f5a732a110277f817a3e8dcd742f193..b471145ff65e07c39689e466387715698b55481e 100644
+index cf9771774e0b4c111ec904cf588f9ba9028fdd5a..2178023cebd119db75b54b1139a2f94ea234fd78 100644
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -886,6 +886,27 @@ public abstract class PlayerList {
+@@ -957,6 +957,27 @@ public abstract class PlayerList {
          player.getBukkitEntity().recalculatePermissions(); // CraftBukkit
          this.server.getCommands().sendCommands(player);
          } // Paper - Add sendOpLevel API
@@ -37,7 +37,7 @@ index 3e18c6ca8f5a732a110277f817a3e8dcd742f193..b471145ff65e07c39689e46638771569
  
      // Paper start - whitelist verify event / login event
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index def90b5105edb0303eecc4424ff7d6e2cb050791..99db58c431252f87eda5d741b54a5e4e87addae5 100644
+index 889e253e24b6120cf5c82a623e1a567adec02521..dbb2746192b8aea8a1744c4300e0564c86d9566b 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -176,6 +176,7 @@ public abstract class Player extends Avatar implements ContainerUser {
@@ -186,7 +186,7 @@ index f1a5b9670dd04b800a8d755f32364458a16d924a..899f422494396dd0b797c03de209e7a2
      public BlockEntity newBlockEntity(final BlockPos worldPosition, final BlockState blockState) {
          return new EnderChestBlockEntity(worldPosition, blockState);
 diff --git a/net/minecraft/world/level/block/entity/BarrelBlockEntity.java b/net/minecraft/world/level/block/entity/BarrelBlockEntity.java
-index 5bfd25f22808794f5e24d5425ea32e8c1b927182..e489da795bfc3f6fded36608761068ba7f333e4b 100644
+index 118af4e35eec652e7eb8a484a44652cfabc1bab5..695ded41914d2614b869cee9b0a51a41381b1f39 100644
 --- a/net/minecraft/world/level/block/entity/BarrelBlockEntity.java
 +++ b/net/minecraft/world/level/block/entity/BarrelBlockEntity.java
 @@ -59,7 +59,16 @@ public class BarrelBlockEntity extends RandomizableContainerBlockEntity {

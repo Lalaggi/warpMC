@@ -18,10 +18,10 @@ index ec6dd9de7b82841b1403b1bb851392132be5275b..146c404ac0471ed7df6d3740859663aa
              public boolean isClientAuthoritative() {
                  return false;
 diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
-index 35732cb361c304154baa5965f3499099de98e11f..bc493f35fb06107a1ed44b2a24009ba4015e0e88 100644
+index d789de774e99aee6f4c6d765206813eec15eb94a..0dc2b40823a838bf0a45baf20c3e4ccb96cc7509 100644
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1842,6 +1842,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1843,6 +1843,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
          for (ServerLevel level : this.getAllLevels()) {
              level.hasPhysicsEvent = org.bukkit.event.block.BlockPhysicsEvent.getHandlerList().getRegisteredListeners().length > 0; // Paper - BlockPhysicsEvent
              level.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0; // Paper - Add EntityMoveEvent
@@ -42,7 +42,7 @@ index 9a5be73c618c4c8572aad4ca2673def65658eeee..50a1fe6bd9f7e6cf79e48e1420fbe153
      @Override
      public @Nullable LevelChunk getChunkIfLoaded(int x, int z) {
 diff --git a/net/minecraft/server/level/ServerPlayer.java b/net/minecraft/server/level/ServerPlayer.java
-index 01438fdfcd047c4d0e9a9f0ebfd9e01434161dc5..3db9626ae55aae9c9fef22771f06ac37c8ad2890 100644
+index b567b3ac3d6caea4ceb5c1d20171e32d4058401e..b47bf942bc65f93f47bbde3bf585a268ab6330a3 100644
 --- a/net/minecraft/server/level/ServerPlayer.java
 +++ b/net/minecraft/server/level/ServerPlayer.java
 @@ -775,6 +775,15 @@ public class ServerPlayer extends Player implements ca.spottedleaf.moonrise.patc
@@ -75,10 +75,10 @@ index f677c17b84ad46ad129c87417d6cf1e8aa44b1e1..cc895257b6f0de151c73cbf25d070514
                          if (itemType == Items.WATER_BUCKET && target instanceof net.minecraft.world.entity.Bucketable && target instanceof LivingEntity && resendData) {
                              target.resendPossiblyDesyncedEntityData(ServerGamePacketListenerImpl.this.player); // Paper - The entire mob gets deleted, so resend it
 diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
-index 4ae58d6d8b6bd9510b6caf1e6618da4e9bed28bf..a4b74837096b4653b8504dbf446ad42277975e7e 100644
+index 4941bfc8d3bf3ca7735fa0ec1b1b9c4b44188e1c..03bdf9a81b253eeeb0e6e8032e086798123ea4e0 100644
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -3463,6 +3463,13 @@ public abstract class Entity
+@@ -3466,6 +3466,13 @@ public abstract class Entity
  
              this.passengers = ImmutableList.copyOf(newPassengers);
          }
@@ -92,7 +92,7 @@ index 4ae58d6d8b6bd9510b6caf1e6618da4e9bed28bf..a4b74837096b4653b8504dbf446ad422
      }
  
      // Paper start - Force entity dismount during teleportation
-@@ -3503,6 +3510,14 @@ public abstract class Entity
+@@ -3506,6 +3513,14 @@ public abstract class Entity
              return false;
          }
          // CraftBukkit end
@@ -107,7 +107,7 @@ index 4ae58d6d8b6bd9510b6caf1e6618da4e9bed28bf..a4b74837096b4653b8504dbf446ad422
          if (this.passengers.size() == 1 && this.passengers.get(0) == passenger) {
              this.passengers = ImmutableList.of();
          } else {
-@@ -5490,4 +5505,44 @@ public abstract class Entity
+@@ -5493,4 +5508,44 @@ public abstract class Entity
          return ((ServerLevel) this.level()).isPositionEntityTicking(this.blockPosition());
      }
      // Paper end
@@ -334,12 +334,12 @@ index 271e1ff85d778998de465e1099c4fc7219b2d98d..448013466e144691ac317e0ea61cebf1
 +    // Purpur end - Ridables
  }
 diff --git a/net/minecraft/world/entity/ai/attributes/AttributeMap.java b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
-index 68bad6752bd313ca3ebde7fd4e3b2c46c5dee3ef..fe5f4f79e5a1b091d15fa3bfd876b831e493655c 100644
+index a44af8014ab2de6acbc08bee29c790e477e2a577..8c7d53680f354a776d30a74899cf325c6c26b8b7 100644
 --- a/net/minecraft/world/entity/ai/attributes/AttributeMap.java
 +++ b/net/minecraft/world/entity/ai/attributes/AttributeMap.java
 @@ -18,14 +18,21 @@ public class AttributeMap {
-     private final Set<AttributeInstance> attributesToSync = new ObjectOpenHashSet<>();
-     private final Set<AttributeInstance> attributesToUpdate = new ObjectOpenHashSet<>();
+     private final Set<AttributeInstance> attributesToSync = new ReferenceOpenHashSet<>(0);
+     private final Set<AttributeInstance> attributesToUpdate = new ReferenceOpenHashSet<>(0);
      private final AttributeSupplier supplier;
 +    private final net.minecraft.world.entity.LivingEntity entity; // Purpur - Ridables
  
@@ -5290,7 +5290,7 @@ index 0b668baf3fca348d9e3755c114bd109fe7736a80..45279d3473f42dd0f75315961bd178c1
                  if (this.level().purpurConfig.wanderingTraderAllowTrading) { // Purpur - Add config for villager trading
                  this.setTradingPlayer(player);
 diff --git a/net/minecraft/world/entity/player/Player.java b/net/minecraft/world/entity/player/Player.java
-index 49709c2cb9c8804f13bf992e771254e0d7d83cf5..c12d88851552a5ac0b4c2e9c19d049e0a52dc578 100644
+index a5edd004a434433bbef6d4dad6a3628daf239073..889e253e24b6120cf5c82a623e1a567adec02521 100644
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
 @@ -194,6 +194,19 @@ public abstract class Player extends Avatar implements ContainerUser {
