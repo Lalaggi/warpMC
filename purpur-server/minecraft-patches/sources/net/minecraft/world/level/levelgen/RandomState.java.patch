@@ -1,0 +1,34 @@
+--- a/net/minecraft/world/level/levelgen/RandomState.java
++++ b/net/minecraft/world/level/levelgen/RandomState.java
+@@ -23,6 +_,9 @@
+     private final PositionalRandomFactory oreRandom;
+     private final Map<ResourceKey<NormalNoise.NoiseParameters>, NormalNoise> noiseIntances;
+     private final Map<Identifier, PositionalRandomFactory> positionalRandoms;
++    // WarpMC - precompiled density-tree wrap program for NoiseChunk (built once per router,
++    // replayed per chunk). Lives here (1:1 with router) so lookup is a direct field read.
++    private volatile NoiseChunk.WrapPlan wrapPlan;
+ 
+     public static RandomState create(final HolderGetter.Provider holders, final ResourceKey<NoiseGeneratorSettings> noiseSettings, final long seed) {
+         return create(holders.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(noiseSettings).value(), holders.lookupOrThrow(Registries.NOISE), seed);
+@@ -119,6 +_,21 @@
+ 
+     public NoiseRouter router() {
+         return this.router;
++    }
++
++    // WarpMC - double-checked lazy build; worst case two threads race and one plan is discarded.
++    public NoiseChunk.WrapPlan getWrapPlan() {
++        NoiseChunk.WrapPlan plan = this.wrapPlan;
++        if (plan == null) {
++            synchronized (this) {
++                plan = this.wrapPlan;
++                if (plan == null) {
++                    plan = NoiseChunk.buildWrapPlan(this.router);
++                    this.wrapPlan = plan;
++                }
++            }
++        }
++        return plan;
+     }
+ 
+     public Climate.Sampler sampler() {

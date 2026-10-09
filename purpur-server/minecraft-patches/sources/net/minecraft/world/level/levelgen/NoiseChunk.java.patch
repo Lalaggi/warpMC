@@ -8,42 +8,159 @@
  import java.util.List;
  import java.util.Map;
  import net.minecraft.core.Holder;
-@@ -31,7 +_,13 @@
+@@ -31,7 +_,92 @@
      private final int firstNoiseZ;
      private final List<NoiseChunk.NoiseInterpolator> interpolators;
      private final List<NoiseChunk.CacheAllInCell> cellCaches;
 -    private final Map<DensityFunction, DensityFunction> wrapped = new HashMap<>();
-+    // WarpMC - per-chunk wrap memo with fastutil (no HashMap$Node allocs).
-+    // NOTE: must stay equality-based, NOT identity: datapacks contain duplicate
-+    // cache_once markers (e.g. overworld/offset.json) whose sharing vanilla relies on.
-+    private final Map<DensityFunction, DensityFunction> wrapped = new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>();
-+    // WarpMC - hoist wrap visitor: mapAll(this::wrap) runs ~8x per chunk, method ref allocs each time
-+    private final DensityFunction.Visitor wrapVisitor = this::wrap;
-+    private final java.util.function.Function<DensityFunction, DensityFunction> wrapNewFn = this::wrapNew;
++    // ---- WarpMC: precompiled density-tree wrap program ----
++    // Vanilla runs ~8 mapAll tree walks per NoiseChunk (15 router fields, full noise,
++    // 6 climate fields). Each walk re-dispatches every node through RecursiveVisitor and
++    // re-hashes it through an equality memo (record hashCode recurses into children:
++    // O(subtree) per node). The TREE STRUCTURE is fixed per RandomState router; only the
++    // wrap DECISIONS depend on per-chunk blender/beardifier state (read live in wrapNew).
++    // So we walk once per router, assign canonical post-order IDs (equality-deduped: this
++    // preserves vanilla wrapper sharing EXACTLY, including duplicate cache_once markers
++    // such as overworld/offset.json), and replay per chunk with a plain array memo:
++    // same operations, same order, no visitor dispatch, no hashing.
++    // Reachability note: replay calls the SAME mapChildren/wrapNew methods, so any exotic
++    // custom density function behaves identically; only the traversal is precomputed.
++    static final class WrapPlan {
++        final NoiseRouter router;
++        final DensityFunction[] nodes; // canonical, deduped by equality
++        final java.util.IdentityHashMap<DensityFunction, Integer> idOf; // canonical object -> id (O(1), no hashing of content)
++        final Map<DensityFunction, Integer> byEqual; // foreign-router root resolution only (rare)
++        final int[] routerFieldIds; // 15, NoiseRouter.mapAll order
++        final int[] climateFieldIds; // 6
++
++        WrapPlan(final NoiseRouter router, final DensityFunction[] nodes,
++                 final java.util.IdentityHashMap<DensityFunction, Integer> idOf,
++                 final Map<DensityFunction, Integer> byEqual,
++                 final int[] routerFieldIds, final int[] climateFieldIds) {
++            this.router = router;
++            this.nodes = nodes;
++            this.idOf = idOf;
++            this.byEqual = byEqual;
++            this.routerFieldIds = routerFieldIds;
++            this.climateFieldIds = climateFieldIds;
++        }
++    }
++
++    static WrapPlan buildWrapPlan(final NoiseRouter router) {
++        final Map<DensityFunction, Integer> byEqual = new java.util.HashMap<>();
++        final List<DensityFunction> order = new ArrayList<>();
++        final DensityFunction[] roots = {
++            router.barrierNoise(), router.fluidLevelFloodednessNoise(), router.fluidLevelSpreadNoise(),
++            router.lavaNoise(), router.temperature(), router.vegetation(), router.continents(),
++            router.erosion(), router.depth(), router.ridges(), router.preliminarySurfaceLevel(),
++            router.finalDensity(), router.veinToggle(), router.veinRidged(), router.veinGap()
++        };
++        for (DensityFunction root : roots) {
++            indexWrapNode(root, byEqual, order);
++        }
++        final WrapPlan plan;
++        {
++            final DensityFunction[] nodes = order.toArray(new DensityFunction[0]);
++            final java.util.IdentityHashMap<DensityFunction, Integer> idOf = new java.util.IdentityHashMap<>(byEqual.size() * 2);
++            byEqual.forEach(idOf::put);
++            final int[] routerFieldIds = new int[roots.length];
++            for (int i = 0; i < roots.length; i++) {
++                routerFieldIds[i] = byEqual.get(roots[i]);
++            }
++            final DensityFunction[] climate = {
++                router.temperature(), router.vegetation(), router.continents(),
++                router.erosion(), router.depth(), router.ridges()
++            };
++            final int[] climateFieldIds = new int[climate.length];
++            for (int i = 0; i < climate.length; i++) {
++                climateFieldIds[i] = byEqual.get(climate[i]);
++            }
++            plan = new WrapPlan(router, nodes, idOf, byEqual, routerFieldIds, climateFieldIds);
++        }
++        return plan;
++    }
++
++    private static void indexWrapNode(final DensityFunction node, final Map<DensityFunction, Integer> byEqual, final List<DensityFunction> order) {
++        if (byEqual.containsKey(node)) {
++            return;
++        }
++        // mapChildren rebuilds garbage parents here (one-time build cost); we only
++        // need it to discover children. Leaves return `this` without visiting.
++        node.mapChildren(child -> {
++            indexWrapNode(child, byEqual, order);
++            return child;
++        });
++        byEqual.put(node, order.size());
++        order.add(node);
++    }
++
++    private final WrapPlan wrapPlan;
++    private final DensityFunction[] wrapMemo;
++    private final DensityFunction.Visitor replayVisitor = this::replayChild;
++    // Vanilla fallback path (foreign router objects): lazily created, ~never used.
++    private Map<DensityFunction, DensityFunction> fallbackWrapped;
      private final Long2IntMap preliminarySurfaceLevelCache = new Long2IntOpenHashMap();
      private final Aquifer aquifer;
      private final DensityFunction preliminarySurfaceLevel;
-@@ -140,7 +_,7 @@
+@@ -140,7 +_,20 @@
          }
  
          NoiseRouter router = randomState.router();
 -        NoiseRouter wrappedRouter = router.mapAll(this::wrap);
-+        NoiseRouter wrappedRouter = router.mapAll(this.wrapVisitor);
++        // WarpMC - replay the precompiled wrap program instead of ~8 mapAll tree walks.
++        // Same operations in the same order (first-encounter DFS), array memo instead of hashing memo.
++        final WrapPlan wrapPlan = randomState.getWrapPlan();
++        this.wrapPlan = wrapPlan;
++        this.wrapMemo = new DensityFunction[wrapPlan.nodes.length];
++        final int[] fieldIds = wrapPlan.routerFieldIds;
++        final DensityFunction[] w = new DensityFunction[fieldIds.length];
++        for (int i = 0; i < fieldIds.length; i++) {
++            w[i] = this.replayNode(fieldIds[i]);
++        }
++        NoiseRouter wrappedRouter = new NoiseRouter(
++            w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7],
++            w[8], w[9], w[10], w[11], w[12], w[13], w[14]
++        );
          this.preliminarySurfaceLevel = wrappedRouter.preliminarySurfaceLevel();
          if (!settings.isAquifersEnabled()) {
              this.aquifer = Aquifer.createDisabled(globalFluidPicker);
-@@ -156,7 +_,7 @@
-         DensityFunction fullNoiseValue = DensityFunctions.cacheAllInCell(
-                 DensityFunctions.add(wrappedRouter.finalDensity(), DensityFunctions.BeardifierMarker.INSTANCE)
-             )
+@@ -153,10 +_,13 @@
+         }
+ 
+         List<NoiseChunk.BlockStateFiller> builder = new ArrayList<>();
+-        DensityFunction fullNoiseValue = DensityFunctions.cacheAllInCell(
+-                DensityFunctions.add(wrappedRouter.finalDensity(), DensityFunctions.BeardifierMarker.INSTANCE)
+-            )
 -            .mapAll(this::wrap);
-+            .mapAll(this.wrapVisitor);
++        // WarpMC - mirror of the vanilla full-noise walk: the walk would descend into the
++        // already-wrapped finalDensity subtree (all memo misses on fresh objects, all
++        // passthrough) and end by wrapping cacheAllInCell(add(final, beardifier)).
++        // Same result with two allocs and zero traversal.
++        DensityFunction fullNoiseValue = this.wrapNew(DensityFunctions.cacheAllInCell(
++                DensityFunctions.add(wrappedRouter.finalDensity(), this.beardifier)
++            ));
          this.fullNoiseDensity = fullNoiseValue;
          builder.add(context -> this.aquifer.computeSubstance(context, fullNoiseValue.compute(context)));
          if (settings.oreVeinsEnabled()) {
-@@ -168,12 +_,12 @@
+@@ -167,13 +_,28 @@
+     }
  
      protected Climate.Sampler cachedClimateSampler(final NoiseRouter noises, final List<Climate.ParameterPoint> spawnTarget) {
++        if (noises == this.wrapPlan.router) {
++            // WarpMC - same router: climate densities were already replayed during
++            // construction (shared memo), so this is six array reads, zero traversal.
++            final int[] climateIds = this.wrapPlan.climateFieldIds;
++            return new Climate.Sampler(
++                this.wrapMemo[climateIds[0]],
++                this.wrapMemo[climateIds[1]],
++                this.wrapMemo[climateIds[2]],
++                this.wrapMemo[climateIds[3]],
++                this.wrapMemo[climateIds[4]],
++                this.wrapMemo[climateIds[5]],
++                spawnTarget
++            );
++        }
++        // WarpMC - foreign router objects: vanilla path (lazily allocated memo).
          return new Climate.Sampler(
 -            noises.temperature().mapAll(this::wrap),
 -            noises.vegetation().mapAll(this::wrap),
@@ -51,21 +168,54 @@
 -            noises.erosion().mapAll(this::wrap),
 -            noises.depth().mapAll(this::wrap),
 -            noises.ridges().mapAll(this::wrap),
-+            noises.temperature().mapAll(this.wrapVisitor),
-+            noises.vegetation().mapAll(this.wrapVisitor),
-+            noises.continents().mapAll(this.wrapVisitor),
-+            noises.erosion().mapAll(this.wrapVisitor),
-+            noises.depth().mapAll(this.wrapVisitor),
-+            noises.ridges().mapAll(this.wrapVisitor),
++            this.wrapFallback(noises.temperature()),
++            this.wrapFallback(noises.vegetation()),
++            this.wrapFallback(noises.continents()),
++            this.wrapFallback(noises.erosion()),
++            this.wrapFallback(noises.depth()),
++            this.wrapFallback(noises.ridges()),
              spawnTarget
          );
      }
-@@ -373,7 +_,7 @@
+@@ -372,8 +_,39 @@
+         return output;
      }
  
-     protected DensityFunction wrap(final DensityFunction function) {
+-    protected DensityFunction wrap(final DensityFunction function) {
 -        return this.wrapped.computeIfAbsent(function, this::wrapNew);
-+        return this.wrapped.computeIfAbsent(function, this.wrapNewFn);
++    // WarpMC - replay one canonical node: children resolve through the array memo
++    // (post-order recursion guarantees filled), then the SAME wrapNew as vanilla.
++    // Construction order matches vanilla's first-encounter DFS order, so
++    // cellCaches/interpolators registration order is preserved.
++    private DensityFunction replayNode(final int id) {
++        DensityFunction existing = this.wrapMemo[id];
++        if (existing != null) {
++            return existing;
++        }
++        DensityFunction node = this.wrapPlan.nodes[id];
++        DensityFunction result = this.wrapNew(node.mapChildren(this.replayVisitor));
++        this.wrapMemo[id] = result;
++        return result;
++    }
++
++    private DensityFunction replayChild(final DensityFunction child) {
++        final Integer id = this.wrapPlan.idOf.get(child);
++        if (id == null) {
++            // Provably unreachable for immutable trees (plan indexed every reachable node),
++            // kept as a loud invariant: silent fallback would hide datapack surprises.
++            throw new IllegalStateException("WarpMC wrap plan missed node " + child.getClass());
++        }
++        return this.replayNode(id);
++    }
++
++    // WarpMC - vanilla fallback for foreign router objects (custom dimensions calling
++    // cachedClimateSampler with another RandomState's router). Lazily allocated; ~never used
++    // on vanilla routers since the level shares one RandomState.
++    private DensityFunction wrapFallback(final DensityFunction root) {
++        if (this.fallbackWrapped == null) {
++            this.fallbackWrapped = new java.util.HashMap<>();
++        }
++        return root.mapAll(function -> this.fallbackWrapped.computeIfAbsent(function, this::wrapNew));
      }
  
      private DensityFunction wrapNew(final DensityFunction function) {
