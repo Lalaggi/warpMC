@@ -1,0 +1,58 @@
+--- a/net/minecraft/world/level/levelgen/feature/treedecorators/AlterGroundDecorator.java
++++ b/net/minecraft/world/level/levelgen/feature/treedecorators/AlterGroundDecorator.java
+@@ -25,37 +_,42 @@
+         List<BlockPos> blockPositions = TreeFeature.getLowestTrunkOrRootOfTree(context);
+         if (!blockPositions.isEmpty()) {
+             int minY = blockPositions.getFirst().getY();
+-            blockPositions.stream().filter(pos -> pos.getY() == minY).forEach(pos -> {
+-                this.placeCircle(context, pos.west().north());
+-                this.placeCircle(context, pos.east(2).north());
+-                this.placeCircle(context, pos.west().south(2));
+-                this.placeCircle(context, pos.east(2).south(2));
+-
+-                for (int i = 0; i < 5; i++) {
++            // WarpMC - indexed loop + mutable pos (was stream + immutable offset allocs per tree)
++            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
++            for (int i = 0; i < blockPositions.size(); i++) {
++                BlockPos pos = blockPositions.get(i);
++                if (pos.getY() != minY) {
++                    continue;
++                }
++                this.placeCircle(context, cursor, pos.getX() - 1, pos.getY(), pos.getZ() - 1);
++                this.placeCircle(context, cursor, pos.getX() + 2, pos.getY(), pos.getZ() - 1);
++                this.placeCircle(context, cursor, pos.getX() - 1, pos.getY(), pos.getZ() + 2);
++                this.placeCircle(context, cursor, pos.getX() + 2, pos.getY(), pos.getZ() + 2);
++                for (int j = 0; j < 5; j++) {
+                     int placement = context.random().nextInt(64);
+                     int xx = placement % 8;
+                     int zz = placement / 8;
+                     if (xx == 0 || xx == 7 || zz == 0 || zz == 7) {
+-                        this.placeCircle(context, pos.offset(-3 + xx, 0, -3 + zz));
++                        this.placeCircle(context, cursor, pos.getX() - 3 + xx, pos.getY(), pos.getZ() - 3 + zz);
+                     }
+                 }
+-            });
++            }
+         }
+     }
+ 
+-    private void placeCircle(final TreeDecorator.Context context, final BlockPos pos) {
++    private void placeCircle(final TreeDecorator.Context context, final BlockPos.MutableBlockPos cursor, final int centerX, final int centerY, final int centerZ) {
+         for (int xx = -2; xx <= 2; xx++) {
+             for (int zz = -2; zz <= 2; zz++) {
+                 if (Math.abs(xx) != 2 || Math.abs(zz) != 2) {
+-                    this.placeBlockAt(context, pos.offset(xx, 0, zz));
++                    this.placeBlockAt(context, cursor, centerX + xx, centerY, centerZ + zz);
+                 }
+             }
+         }
+     }
+ 
+-    private void placeBlockAt(final TreeDecorator.Context context, final BlockPos pos) {
++    private void placeBlockAt(final TreeDecorator.Context context, final BlockPos.MutableBlockPos cursor, final int x, final int y, final int z) {
+         for (int dy = 2; dy >= -3; dy--) {
+-            BlockPos cursor = pos.above(dy);
++            cursor.set(x, y + dy, z);
+             BlockState replaceWith = this.provider.getOptionalState(context.level(), context.random(), cursor);
+             if (replaceWith != null) {
+                 context.setBlock(cursor, replaceWith);

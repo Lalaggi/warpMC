@@ -1,0 +1,22 @@
+--- a/net/minecraft/world/level/levelgen/feature/stateproviders/RandomizedIntStateProvider.java
++++ b/net/minecraft/world/level/levelgen/feature/stateproviders/RandomizedIntStateProvider.java
+@@ -70,12 +_,12 @@
+     }
+ 
+     private static @Nullable IntegerProperty findProperty(final BlockState source, final String propertyName) {
+-        Collection<Property<?>> properties = source.getProperties();
+-        Optional<IntegerProperty> found = properties.stream()
+-            .filter(p -> p.getName().equals(propertyName))
+-            .filter(p -> p instanceof IntegerProperty)
+-            .map(p -> (IntegerProperty)p)
+-            .findAny();
+-        return found.orElse(null);
++        // WarpMC - for loop over stream (runs per placed block)
++        for (Property<?> p : source.getProperties()) {
++            if (p.getName().equals(propertyName) && p instanceof IntegerProperty integerProperty) {
++                return integerProperty;
++            }
++        }
++        return null;
+     }
+ }

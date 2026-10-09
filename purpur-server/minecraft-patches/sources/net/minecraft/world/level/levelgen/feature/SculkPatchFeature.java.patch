@@ -1,0 +1,24 @@
+--- a/net/minecraft/world/level/levelgen/feature/SculkPatchFeature.java
++++ b/net/minecraft/world/level/levelgen/feature/SculkPatchFeature.java
+@@ -65,8 +_,18 @@
+ 
+     private boolean canSpreadFrom(final LevelAccessor level, final BlockPos origin) {
+         BlockState start = level.getBlockState(origin);
+-        return start.getBlock() instanceof SculkBehaviour
+-            || (start.isAir() || start.is(Blocks.WATER) && start.getFluidState().isSource())
+-                && Direction.stream().map(origin::relative).anyMatch(pos -> level.getBlockState(pos).isCollisionShapeFullBlock(level, pos));
++        if (start.getBlock() instanceof SculkBehaviour) {
++            return true;
++        }
++        // WarpMC - indexed loop over Direction.stream (runs per spread attempt)
++        if (start.isAir() || start.is(Blocks.WATER) && start.getFluidState().isSource()) {
++            for (Direction direction : Direction.ALL) {
++                BlockPos pos = origin.relative(direction);
++                if (level.getBlockState(pos).isCollisionShapeFullBlock(level, pos)) {
++                    return true;
++                }
++            }
++        }
++        return false;
+     }
+ }
