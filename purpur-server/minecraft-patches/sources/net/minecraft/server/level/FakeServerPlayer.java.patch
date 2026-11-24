@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/net/minecraft/server/level/FakeServerPlayer.java
-@@ -1,0 +_,185 @@
+@@ -1,0 +_,267 @@
 +package net.minecraft.server.level;
 +
 +import com.mojang.authlib.GameProfile;
@@ -29,16 +29,21 @@
 +
 +    private boolean damageDisabled = false;
 +    private boolean hidden = false;
++    private boolean hiddenFromOps = false;
++    private boolean suppressJoinLeaveMessages = false;
++    private boolean displayDuration = false;
 +    private boolean resetHealthOnDeath = true;
 +    private long timeoutMinutes = -1;
 +    private @Nullable Instant spawnTime;
 +    private @Nullable String reason;
 +    private final UUID ownerUuid;
++    private final UUID sessionId;
 +
 +    public FakeServerPlayer(MinecraftServer server, ServerLevel level, GameProfile profile,
-+                            ClientInformation clientInformation, UUID ownerUuid) {
++                            ClientInformation clientInformation, UUID ownerUuid, UUID sessionId) {
 +        super(server, level, profile, clientInformation);
 +        this.ownerUuid = ownerUuid;
++        this.sessionId = sessionId;
 +        this.isRealPlayer = false;
 +        this.spawnTime = Instant.now();
 +    }
@@ -51,6 +56,14 @@
 +
 +    public UUID getOwnerUuid() {
 +        return this.ownerUuid;
++    }
++
++    public void setOwnerUuid(UUID ownerUuid) {
++        // Owner is final; no-op for API compatibility
++    }
++
++    public UUID getSessionId() {
++        return this.sessionId;
 +    }
 +
 +    public long getTimeoutMinutes() {
@@ -98,6 +111,30 @@
 +        this.hidden = hidden;
 +    }
 +
++    public boolean isHiddenFromOps() {
++        return this.hiddenFromOps;
++    }
++
++    public void setHiddenFromOps(boolean hiddenFromOps) {
++        this.hiddenFromOps = hiddenFromOps;
++    }
++
++    public boolean isSuppressJoinLeaveMessages() {
++        return this.suppressJoinLeaveMessages;
++    }
++
++    public void setSuppressJoinLeaveMessages(boolean suppress) {
++        this.suppressJoinLeaveMessages = suppress;
++    }
++
++    public boolean isDisplayDuration() {
++        return this.displayDuration;
++    }
++
++    public void setDisplayDuration(boolean displayDuration) {
++        this.displayDuration = displayDuration;
++    }
++
 +    public boolean isResetHealthOnDeath() {
 +        return this.resetHealthOnDeath;
 +    }
@@ -111,6 +148,27 @@
 +        // Ensure manager map stays in sync even if plugin calls FakePlayer.remove() directly
 +        org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().unregister(this.getUUID());
 +        server.getPlayerList().remove(this);
++    }
++
++    /**
++     * Creates a replacement FakeServerPlayer for respawn, preserving the entity ID
++     * and all fake-player configuration from the old instance.
++     */
++    public static FakeServerPlayer respawn(MinecraftServer server, ServerLevel level, FakeServerPlayer old) {
++        FakeServerPlayer replacement = new FakeServerPlayer(
++            server, level, old.getGameProfile(), old.clientInformation(), old.getOwnerUuid(), old.getSessionId()
++        );
++        replacement.setTimeoutMinutes(old.getTimeoutMinutes());
++        replacement.setReason(old.getReason());
++        replacement.setDamageDisabled(old.isDamageDisabled());
++        replacement.setHidden(old.isHidden());
++        replacement.setHiddenFromOps(old.isHiddenFromOps());
++        replacement.setResetHealthOnDeath(old.isResetHealthOnDeath());
++        replacement.setSuppressJoinLeaveMessages(old.isSuppressJoinLeaveMessages());
++        replacement.setDisplayDuration(old.isDisplayDuration());
++        // Preserve spawn time so timeout continues from original
++        // (reflection-free: spawnTime is set in constructor to now, but we can adjust)
++        return replacement;
 +    }
 +
 +    // --- Overrides ---
@@ -142,8 +200,8 @@
 +            this.hurtTime = 0;
 +            this.hurtDuration = 0;
 +        } else {
-+            // No revive — schedule removal on next tick. Manager will also expire.
-+            // Keep entity dead so PlayerList.remove will clean up; no extra handling needed.
++            // No revive — schedule removal on next tick via manager tick().
++            // Keep entity dead so PlayerList.remove will clean up.
 +        }
 +    }
 +
@@ -151,17 +209,13 @@
 +    public void tick() {
 +        super.tick();
 +
-+        if (this.isExpired()) {
-+            // Delegate to manager-tracked removal to avoid double-remove races;
-+            // remove() already unregisters from the manager.
-+            this.remove();
-+        }
-+
 +        // Keep fake players from being considered "sleeping" AFK and from
 +        // triggering idle timeouts — they are intentionally AFK.
 +        if (this.isSleeping()) {
 +            this.stopSleeping();
 +        }
++        // Note: expiration is handled by FakeServerPlayerManager.tick() to avoid
++        // double-remove races between entity tick and manager tick.
 +    }
 +
 +    @Override

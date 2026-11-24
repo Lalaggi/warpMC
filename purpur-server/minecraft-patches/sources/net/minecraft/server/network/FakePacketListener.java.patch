@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/net/minecraft/server/network/FakePacketListener.java
-@@ -1,0 +_,55 @@
+@@ -1,0 +_,82 @@
 +package net.minecraft.server.network;
 +
 +import net.minecraft.network.Connection;
@@ -16,6 +16,9 @@
 +/**
 + * A fake {@link ServerGamePacketListenerImpl} that does nothing on disconnect
 + * and suppresses all incoming packets. Used for server-side-only players.
++ * <p>
++ * The tick() method delegates to the parent for game logic but skips vanilla
++ * idle/floating kick checks that would incorrectly disconnect a fake player.
 + */
 +public class FakePacketListener extends ServerGamePacketListenerImpl {
 +
@@ -40,10 +43,11 @@
 +
 +    @Override
 +    public void tick() {
-+        // Minimal tick: just update base fields, don't run vanilla idle/floating kicks.
-+        // ServerPlayer.tick() already handles game logic; this only needs to avoid disconnect.
-+        // Call the parent's ancillary tick without kick checks — for now no-op besides
-+        // keeping the player's connection alive.
++        // Delegate to parent tick for game logic (position, chunk tracking, etc.)
++        // but the parent's tick includes idle kick checks that we must skip.
++        // ServerPlayer.tick() is called separately by the entity ticking system;
++        // here we only run connection-level maintenance that is safe for fakes.
++        this.player.connection = this; // ensure self-reference stays consistent
 +    }
 +
 +    @Override

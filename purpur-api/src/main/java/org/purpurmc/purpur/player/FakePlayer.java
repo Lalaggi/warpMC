@@ -14,6 +14,11 @@ import org.jetbrains.annotations.Nullable;
  * Fake players are full {@link Player} instances: they appear in tab list,
  * receive ticks, can interact with the world, and respond to all game mechanics
  * identically to real players.
+ * <p>
+ * Fake players are registered with the {@link FakePlayerFactory} and fire
+ * lifecycle events ({@link org.purpurmc.purpur.event.FakePlayerSpawnEvent},
+ * {@link org.purpurmc.purpur.event.FakePlayerRemoveEvent},
+ * {@link org.purpurmc.purpur.event.FakePlayerRespawnEvent}).
  */
 public interface FakePlayer extends Player {
 
@@ -30,6 +35,13 @@ public interface FakePlayer extends Player {
      * @return the owner's UUID
      */
     @NotNull UUID getOwnerUuid();
+
+    /**
+     * Sets the UUID of the real player who owns this fake player.
+     *
+     * @param ownerUuid the new owner's UUID
+     */
+    void setOwnerUuid(@NotNull UUID ownerUuid);
 
     /**
      * Gets the duration in minutes that this fake player is configured to remain.
@@ -119,4 +131,64 @@ public interface FakePlayer extends Player {
      * Removes this fake player from the server, as if they disconnected.
      */
     void remove();
+
+    /**
+     * Gets a persistent session identifier for this fake player. Used by the
+     * built-in persistence system to match saved data across restarts.
+     *
+     * @return the session UUID, or null if not persisted
+     */
+    @Nullable UUID getSessionId();
+
+    /**
+     * Sets the persistent session identifier for this fake player.
+     *
+     * @param sessionId the session UUID
+     */
+    void setSessionId(@Nullable UUID sessionId);
+
+    /**
+     * Returns whether this fake player should be hidden from operators as well
+     * when {@link #isHidden()} is true.
+     *
+     * @return true if hidden from ops too
+     */
+    boolean isHiddenFromOps();
+
+    /**
+     * Sets whether this fake player should be hidden from operators as well
+     * when {@link #isHidden()} is true.
+     *
+     * @param hiddenFromOps true to hide from operators
+     */
+    void setHiddenFromOps(boolean hiddenFromOps);
+
+    /**
+     * Returns whether this fake player's join/leave messages are suppressed.
+     *
+     * @return true if join/leave messages are suppressed
+     */
+    boolean isSuppressJoinLeaveMessages();
+
+    /**
+     * Sets whether this fake player's join/leave messages are suppressed.
+     *
+     * @param suppress true to suppress messages
+     */
+    void setSuppressJoinLeaveMessages(boolean suppress);
+
+    /**
+     * Returns the display duration setting — when true, broadcast messages
+     * include the remaining timeout duration.
+     *
+     * @return true if duration should be displayed in messages
+     */
+    boolean isDisplayDuration();
+
+    /**
+     * Sets whether broadcast messages should include the remaining timeout duration.
+     *
+     * @param displayDuration true to display duration
+     */
+    void setDisplayDuration(boolean displayDuration);
 }

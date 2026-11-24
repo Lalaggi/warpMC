@@ -1,12 +1,11 @@
 --- /dev/null
 +++ b/net/minecraft/server/network/FakeConnection.java
-@@ -1,0 +_,44 @@
+@@ -1,0 +_,56 @@
 +package net.minecraft.server.network;
 +
 +import io.netty.channel.embedded.EmbeddedChannel;
 +import java.net.InetSocketAddress;
 +import java.net.SocketAddress;
-+import javax.annotation.Nullable;
 +import net.minecraft.network.Connection;
 +import net.minecraft.network.PacketListener;
 +import net.minecraft.network.protocol.PacketFlow;
@@ -15,6 +14,9 @@
 +/**
 + * A fake {@link Connection} that does nothing — no real network socket,
 + * no packet sending, no disconnect handling. Used for server-side-only players.
++ * <p>
++ * Uses a minimal EmbeddedChannel only where NMS requires a non-null channel;
++ * all actual I/O is no-op.
 + */
 +public class FakeConnection extends Connection {
 +
@@ -37,7 +39,7 @@
 +
 +    @Override
 +    public void tick() {
-+        // no-op
++        // no-op: no network to tick
 +    }
 +
 +    @Override

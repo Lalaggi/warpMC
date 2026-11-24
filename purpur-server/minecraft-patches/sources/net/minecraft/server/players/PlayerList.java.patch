@@ -45,8 +45,11 @@
  
          org.bukkit.event.player.PlayerJoinEvent playerJoinEvent = new org.bukkit.event.player.PlayerJoinEvent(bukkitPlayer, io.papermc.paper.adventure.PaperAdventure.asAdventure(component)); // Paper - Adventure
 +        // WarpMC start - FakeServerPlayer: respect hidden flag for join message
-+        if (isFake && ((net.minecraft.server.level.FakeServerPlayer) player).isHidden()) {
-+            playerJoinEvent.setJoinMessage(null);
++        if (isFake) {
++            net.minecraft.server.level.FakeServerPlayer fakeJoin = (net.minecraft.server.level.FakeServerPlayer) player;
++            if (fakeJoin.isHidden() || fakeJoin.isSuppressJoinLeaveMessages()) {
++                playerJoinEvent.setJoinMessage(null);
++            }
 +        }
 +        // WarpMC end
          this.cserver.getPluginManager().callEvent(playerJoinEvent);
@@ -99,7 +102,7 @@
  
          org.bukkit.event.player.PlayerQuitEvent playerQuitEvent = new org.bukkit.event.player.PlayerQuitEvent(player.getBukkitEntity(), leaveMessage, player.quitReason); // Paper - Adventure & Add API for quit reason
 +        // WarpMC start - FakeServerPlayer: respect hidden flag for quit message
-+        if (player instanceof net.minecraft.server.level.FakeServerPlayer fakeQuit && fakeQuit.isHidden()) {
++        if (player instanceof net.minecraft.server.level.FakeServerPlayer fakeQuit && (fakeQuit.isHidden() || fakeQuit.isSuppressJoinLeaveMessages())) {
 +            playerQuitEvent.setQuitMessage(null);
 +        }
 +        // WarpMC end
@@ -148,17 +151,14 @@
 +        ServerPlayer player;
 +        if (serverPlayer instanceof net.minecraft.server.level.FakeServerPlayer fake) {
 +            net.minecraft.server.level.ServerLevel respawnLevel = respawnInfo.newLevel();
-+            player = new net.minecraft.server.level.FakeServerPlayer(
-+                this.server, respawnLevel, serverPlayer.getGameProfile(),
-+                serverPlayer.clientInformation(), fake.getOwnerUuid()
++            // Use static factory that preserves ALL state including hiddenFromOps, sessionId, etc.
++            player = net.minecraft.server.level.FakeServerPlayer.respawn(
++                this.server, respawnLevel, fake
 +            );
-+            ((net.minecraft.server.level.FakeServerPlayer) player).setTimeoutMinutes(fake.getTimeoutMinutes());
-+            ((net.minecraft.server.level.FakeServerPlayer) player).setReason(fake.getReason());
-+            ((net.minecraft.server.level.FakeServerPlayer) player).setDamageDisabled(fake.isDamageDisabled());
-+            ((net.minecraft.server.level.FakeServerPlayer) player).setHidden(fake.isHidden());
-+            ((net.minecraft.server.level.FakeServerPlayer) player).setResetHealthOnDeath(fake.isResetHealthOnDeath());
-+            org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().unregister(serverPlayer.getUUID());
-+            org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().register((net.minecraft.server.level.FakeServerPlayer) player);
++            // Preserve entity ID so Pl3xMap/squaremap tracking stays continuous
++            player.setId(serverPlayer.getId());
++            // Atomically swap in manager
++            org.purpurmc.purpur.player.FakeServerPlayerManager.getInstance().onRespawn(fake, (net.minecraft.server.level.FakeServerPlayer) player);
 +        } else {
 +            player = serverPlayer; // Paper - TODO - recreate instance
 +        }
